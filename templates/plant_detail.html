@@ -13,27 +13,30 @@
      class="btn btn-sm btn-primary">
     Modifier cet individu
   </a>
+
+  {# ---- NOUVEAU BOUTON : aller à la fiche espèce ---- #}
+  <a href="{{ url_for('species_detail', latin_name=plant['species_latin_name']) }}"
+     class="btn btn-sm btn-outline-secondary ms-auto">
+    Voir l'espèce
+  </a>
 </div>
 
 {# ---------------------------------------------------------
-   CAPSULE PRINCIPALE (même look que species_detail)
+   CAPSULE PRINCIPALE
 ---------------------------------------------------------- #}
 
 <div class="card shadow-soft mb-4">
   <div class="card-body">
     <div class="row g-3 align-items-start">
 
-      {# --- Colonne image 4x3, même style que species_detail --- #}
+      {# --- Colonne image 4x3 --- #}
       <div class="col-12 col-md-4">
         {% set img_src = None %}
         {% if plant["image_local"] %}
-          {# image spécifique à l’individu, dans static/ #}
           {% set img_src = url_for('static', filename=plant["image_local"]) %}
         {% elif plant["variety_image_url"] %}
-          {# sinon image du cultivar, si définie #}
           {% set img_src = plant["variety_image_url"] %}
         {% elif plant["species_image_url"] %}
-          {# sinon image de l’espèce #}
           {% set img_src = plant["species_image_url"] %}
         {% endif %}
 
@@ -51,7 +54,7 @@
         {% endif %}
       </div>
 
-      {# --- Colonne texte : nom, taxonomie, tags, étiquette --- #}
+      {# --- Colonne texte --- #}
       <div class="col-12 col-md-8">
         <div class="d-flex justify-content-between align-items-start mb-2">
           <div>
@@ -115,7 +118,7 @@
 </div>
 
 {# ---------------------------------------------------------
-   BLOC "Données de l’individu" (terrain, notes, etc.)
+   DONNÉES DE L’INDIVIDU
 ---------------------------------------------------------- #}
 
 <h2 class="h6 mb-2">Données de l’individu</h2>

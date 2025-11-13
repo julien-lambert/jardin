@@ -3,215 +3,349 @@
 {% block title %}Carte du jardin – Jardin de Devey{% endblock %}
 
 {% block head_extra %}
+  <!-- MapLibre GL (WebGL) -->
   <link
+    href="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.css"
     rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin=""
   >
+  <style>
+    /* La div carte doit occuper la hauteur définie par .map-container (dans ton style.css) */
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* On renforce juste un peu le cadre de la carte pour le côté “herbier” */
+    .map-container {
+      border-radius: 1rem;
+      overflow: hidden;
+      border: 1px solid rgba(145, 132, 115, 0.35);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.7),
+        0 12px 30px rgba(0, 0, 0, 0.16);
+      background:
+        radial-gradient(circle at 20% 15%, #fdfbf7 0, #f6f2ea 45%, #e7dfd0 70%, #d0c6b7 100%);
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
-<h1 class="h3 mb-3">Carte du jardin</h1>
+<h1 class="h3 mb-3">Plan du jardin</h1>
 
 <p class="text-muted mb-2">
-  Vue d’ensemble des plants géolocalisés et du contour du terrain à Devey.
+  Vue WebGL du terrain de Devey : contour du terrain et individus géolocalisés,
+  avec un champ de densité qui fusionne les feuillages de loin, puis des points
+  individuels quand on zoome.
 </p>
 
-<div id="map" class="map-container mb-3"></div>
+<div class="map-container mb-3">
+  <div id="map"></div>
+</div>
 
 <p class="small text-muted">
-  Données cartographiques &copy;
-  <a href="https://www.openstreetmap.org/" target="_blank">OpenStreetMap</a>
-  contributors.
+  Plan généré côté navigateur à partir de <code>terrain.geojson</code> et des coordonnées
+  stockées dans la base.
 </p>
 {% endblock %}
 
 {% block scripts_extra %}
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""
-  ></script>
+  <script src="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.js"></script>
 
   <script>
-    // Données envoyées par Flask
+    // ---------- Données venant de Flask ----------
     const plants = {{ plants | tojson }};
 
-    // Centre par défaut (fallback)
     const CENTER_LAT = 45.348751;
     const CENTER_LON = 4.073198;
 
-    // Zoom max souhaité à l’ouverture (on limitera l'auto-zoom à cette valeur)
-    const MAX_INIT_ZOOM = 16;
+    // Construction GeoJSON des plants (lon, lat pour MapLibre)
+    const plantFeatures = plants
+      .filter(p => p.lat !== null && p.lon !== null)
+      .map(p => ({
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: [p.lon, p.lat]
+        },
+        properties: {
+          id: p.id,
+          label: p.label || "",
+          common_name: p.common_name || "",
+          variety_name: p.variety_name || "",
+          zone: p.zone || "",
+          // si un jour tu ajoutes la strate sur plants, elle sera utilisée dans la couleur
+          strata: p.strata || ""
+        }
+      }));
 
-    // ---------- 1) Fonds de carte (basemaps) ----------
-
-    const cartoPositron = L.tileLayer(
-      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-      {
-        maxNativeZoom: 19,
-        maxZoom: 22,
-        attribution:
-          '&copy; OpenStreetMap contributors, &copy; <a href="https://carto.com/" target="_blank">CARTO</a>'
-      }
-    );
-
-    const osmStandard = L.tileLayer(
-      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      {
-        maxNativeZoom: 19,
-        maxZoom: 22,
-        attribution: '&copy; OpenStreetMap contributors'
-      }
-    );
-
-    const openTopo = L.tileLayer(
-      'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-      {
-        maxNativeZoom: 17,
-        maxZoom: 22,
-        attribution:
-          'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap'
-      }
-    );
-
-    const baseLayers = {
-      "Fond clair": cartoPositron,
-      "OSM standard": osmStandard,
-      "Topographique": openTopo
+    const plantsGeoJSON = {
+      type: "FeatureCollection",
+      features: plantFeatures
     };
 
-    // ---------- 2) Création de la carte ----------
+    // ---------- Style minimal MapLibre (sans fond OSM) ----------
+    const style = {
+      "version": 8,
+      "sources": {},
+      "layers": [
+        {
+          "id": "background",
+          "type": "background",
+          "paint": {
+            "background-color": "#f6f2ea"
+          }
+        }
+      ]
+    };
 
-    const map = L.map('map', {
-      center: [CENTER_LAT, CENTER_LON],
-      zoom: 17,          // valeur de départ brute (sera ajustée par applyInitialView)
+    const map = new maplibregl.Map({
+      container: "map",
+      style: style,
+      center: [CENTER_LON, CENTER_LAT],
+      zoom: 17,
       minZoom: 14,
       maxZoom: 22,
-      zoomAnimation: false,
-      scrollWheelZoom: true,
-      dragging: true,
-      layers: [cartoPositron]   // IMPORTANT : fond par défaut
+      attributionControl: false
     });
 
-    const overlays = {};
+    // Contrôles de navigation (zoom + rotation)
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
-    // ---------- 3) Points des plants ----------
+    // ---------- Utilitaires de bbox ----------
 
-    const coords = [];
-    const plantsLayer = L.layerGroup().addTo(map);
-    overlays["Individus"] = plantsLayer;
-
-    plants.forEach(p => {
-      if (p.lat !== null && p.lon !== null) {
-        const latlng = [p.lat, p.lon];
-        coords.push(latlng);
-
-        const marker = L.circleMarker(latlng, {
-          radius: 5,
-          color: "#7b5e4a",
-          weight: 1,
-          fillColor: "#556b2f",
-          fillOpacity: 0.85,
-          interactive: true
-        });
-
-        const label   = p.label ? `<strong>${p.label}</strong><br>` : "";
-        const common  = p.common_name || "Nom commun à préciser";
-        const variety = p.variety_name ? `‘${p.variety_name}’` : "";
-        const zone    = p.zone ? `<br><span class="small text-muted">Zone : ${p.zone}</span>` : "";
-
-        marker.bindPopup(`${label}${common} ${variety}${zone}`);
-
-        marker.on("mouseover", () => {
-          marker.setStyle({ radius: 6, fillOpacity: 1 });
-        });
-        marker.on("mouseout", () => {
-          marker.setStyle({ radius: 5, fillOpacity: 0.85 });
-        });
-
-        plantsLayer.addLayer(marker);
-      }
-    });
-
-    // ---------- 4) Élargissement d’emprise ----------
-
-    function expandBounds(bounds, factor) {
-      const sw = bounds.getSouthWest();
-      const ne = bounds.getNorthEast();
-
-      const latSpan = ne.lat - sw.lat;
-      const lonSpan = ne.lng - sw.lng;
-
-      const extraLat = latSpan * factor;
-      const extraLon = lonSpan * factor;
-
-      return L.latLngBounds(
-        L.latLng(sw.lat - extraLat, sw.lng - extraLon),
-        L.latLng(ne.lat + extraLat, ne.lng + extraLon)
-      );
+    // Bbox d'une FeatureCollection de points
+    function bboxFromFeatureCollection(fc) {
+      if (!fc.features.length) return null;
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      fc.features.forEach(f => {
+        const [x, y] = f.geometry.coordinates;
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+      });
+      return [[minX, minY], [maxX, maxY]];
     }
 
-    // Fonction unique pour fixer la vue initiale
-    function applyInitialView(terrainBoundsOrNull) {
-      let bounds = null;
-
-      if (terrainBoundsOrNull) {
-        bounds = terrainBoundsOrNull;
+    // Bbox d'un terrain polygonal simplifié (on prend le premier polygone)
+    function bboxFromTerrainGeoJSON(terrainGeo) {
+      if (!terrainGeo || !terrainGeo.features || !terrainGeo.features.length) {
+        return null;
       }
+      const geom = terrainGeo.features[0].geometry;
+      if (!geom || geom.type !== "Polygon") return null;
 
-      if (coords.length > 0) {
-        const plantsBounds = L.latLngBounds(coords);
-        bounds = bounds ? bounds.extend(plantsBounds) : plantsBounds;
-      }
+      const ring = geom.coordinates[0]; // premier anneau
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
-      if (bounds) {
-        // factor = 0.5 → emprise environ ~2x en largeur/hauteur
-        const expanded = expandBounds(bounds, 0.5);
-        map.fitBounds(expanded, { padding: [50, 50] });
-
-        // Limiter l’auto-zoom si Leaflet va trop près
-        const z = map.getZoom();
-        if (z > MAX_INIT_ZOOM) {
-          map.setZoom(MAX_INIT_ZOOM);
-        }
-      } else {
-        map.setView([CENTER_LAT, CENTER_LON], MAX_INIT_ZOOM);
-      }
-    }
-
-    // ---------- 5) Contour du terrain (GeoJSON) ----------
-
-    fetch("{{ url_for('static', filename='data/terrain.geojson') }}")
-      .then(resp => resp.json())
-      .then(geojson => {
-        const terrainLayer = L.geoJSON(geojson, {
-          style: {
-            color: "#7b5e4a",
-            weight: 2,
-            fillColor: "#cfd7c6",
-            fillOpacity: 0.25
-          },
-          interactive: false
-        }).addTo(map);
-
-        overlays["Contour du terrain"] = terrainLayer;
-        plantsLayer.bringToFront();
-
-        const terrainBounds = terrainLayer.getBounds();
-        applyInitialView(terrainBounds);
-      })
-      .catch(err => {
-        console.error("Erreur GeoJSON terrain :", err);
-        applyInitialView(null);
+      ring.forEach(([x, y]) => {
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
       });
 
-    // ---------- 6) Contrôle des couches ----------
+      return [[minX, minY], [maxX, maxY]];
+    }
 
-    L.control.layers(baseLayers, overlays, {
-      position: 'topright',
-      collapsed: true
-    }).addTo(map);
+    // Élargir un peu une bbox
+    function expandBbox(bbox, factor) {
+      const [[minX, minY], [maxX, maxY]] = bbox;
+      const dx = (maxX - minX) * factor;
+      const dy = (maxY - minY) * factor;
+      return [
+        [minX - dx, minY - dy],
+        [maxX + dx, maxY + dy]
+      ];
+    }
+
+    // ---------- Chargement du terrain + couches densité / points ----------
+
+    map.on("load", () => {
+      // 1) Terrain depuis terrain.geojson
+      fetch("{{ url_for('static', filename='data/terrain.geojson') }}")
+        .then(r => r.json())
+        .then(terrainGeo => {
+          // Source du terrain
+          map.addSource("terrain", {
+            type: "geojson",
+            data: terrainGeo
+          });
+
+          // Remplissage (shading de la parcelle)
+          map.addLayer({
+            id: "terrain-fill",
+            type: "fill",
+            source: "terrain",
+            paint: {
+              "fill-color": "#cfd7c6",
+              "fill-opacity": 0.65
+            }
+          });
+
+          // Contour
+          map.addLayer({
+            id: "terrain-outline",
+            type: "line",
+            source: "terrain",
+            paint: {
+              "line-color": "#7b5e4a",
+              "line-width": 2
+            }
+          });
+
+          // 2) Source des plants (sans clustering)
+          map.addSource("plants", {
+            type: "geojson",
+            data: plantsGeoJSON
+          });
+
+          // 2a) Heatmap de densité — fusion fluide des feuillages
+          map.addLayer({
+            id: "plants-heat",
+            type: "heatmap",
+            source: "plants",
+            maxzoom: 21,
+            paint: {
+              "heatmap-weight": [
+                "case",
+                ["==", ["get", "strata"], "canopée"],    3.0,
+                ["==", ["get", "strata"], "arbuste"],    1.5,
+                ["==", ["get", "strata"], "couvre-sol"], 0.8,
+                1.0
+              ],
+              "heatmap-intensity": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                14, 0.4,
+                17, 0.9,
+                20, 1.6
+              ],
+              "heatmap-radius": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                14, 45,
+                16, 30,
+                18, 18,
+                20, 10
+              ],
+              "heatmap-color": [
+                "interpolate",
+                ["linear"],
+                ["heatmap-density"],
+                0.0, "rgba(0,0,0,0)",
+                0.1, "rgba(170, 186, 150, 0.35)",
+                0.3, "rgba(136, 156, 120, 0.55)",
+                0.6, "rgba(104, 126, 90, 0.75)",
+                1.0, "rgba(74, 96, 66, 0.9)"
+              ],
+              "heatmap-opacity": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                14, 0.9,
+                17, 0.8,
+                19, 0.6,
+                21, 0.0
+              ]
+            }
+          });
+
+          // 2b) Points individuels, visibles à fort zoom
+          map.addLayer({
+            id: "plants-points",
+            type: "circle",
+            source: "plants",
+            minzoom: 17,
+            paint: {
+              "circle-color": [
+                "case",
+                ["==", ["get", "strata"], "canopée"], "#374822",
+                ["==", ["get", "strata"], "arbuste"], "#556b2f",
+                ["==", ["get", "strata"], "couvre-sol"], "#6b8e23",
+                "#556b2f"
+              ],
+              "circle-radius": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                17, 4.5,
+                20, 3.0,
+                22, 2.4
+              ],
+              "circle-opacity": 1.0,
+              "circle-stroke-color": "rgba(60, 44, 32, 0.85)",
+              "circle-stroke-width": 1
+            }
+          });
+
+          // 3) Popup sur point individuel
+          map.on("click", "plants-points", (e) => {
+            const f = e.features[0];
+            const props = f.properties;
+
+            const label = props.label ? `<strong>${props.label}</strong><br>` : "";
+            const common = props.common_name || "Nom commun à préciser";
+            const variety = props.variety_name ? `‘${props.variety_name}’` : "";
+            const zone = props.zone ? `<br><span class="small text-muted">Zone : ${props.zone}</span>` : "";
+
+            new maplibregl.Popup()
+              .setLngLat(f.geometry.coordinates)
+              .setHTML(`${label}${common} ${variety}${zone}`)
+              .addTo(map);
+          });
+
+          // curseur “main” au survol des points
+          map.on("mouseenter", "plants-points", () => {
+            map.getCanvas().style.cursor = "pointer";
+          });
+          map.on("mouseleave", "plants-points", () => {
+            map.getCanvas().style.cursor = "";
+          });
+
+          // 4) Vue initiale : emprise du terrain et des points, élargie
+          const terrainBbox = bboxFromTerrainGeoJSON(terrainGeo);
+          const plantsBbox = bboxFromFeatureCollection(plantsGeoJSON);
+
+          let finalBbox = null;
+          if (terrainBbox && plantsBbox) {
+            finalBbox = [
+              [
+                Math.min(terrainBbox[0][0], plantsBbox[0][0]),
+                Math.min(terrainBbox[0][1], plantsBbox[0][1])
+              ],
+              [
+                Math.max(terrainBbox[1][0], plantsBbox[1][0]),
+                Math.max(terrainBbox[1][1], plantsBbox[1][1])
+              ]
+            ];
+          } else {
+            finalBbox = terrainBbox || plantsBbox;
+          }
+
+          if (finalBbox) {
+            const expanded = expandBbox(finalBbox, 0.3); // ≈ emprise un peu plus large que le terrain
+            map.fitBounds(expanded, { padding: 40, duration: 0 });
+          } else {
+            // fallback : centre sur Devey
+            map.setCenter([CENTER_LON, CENTER_LAT]);
+            map.setZoom(17);
+          }
+        })
+        .catch(err => {
+          console.error("Erreur lors du chargement de terrain.geojson :", err);
+          // fallback si le terrain ne charge pas
+          if (plantFeatures.length) {
+            const bb = bboxFromFeatureCollection(plantsGeoJSON);
+            const expanded = expandBbox(bb, 0.3);
+            map.fitBounds(expanded, { padding: 40, duration: 0 });
+          } else {
+            map.setCenter([CENTER_LON, CENTER_LAT]);
+            map.setZoom(17);
+          }
+        });
+    });
   </script>
 {% endblock %}

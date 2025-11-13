@@ -492,7 +492,7 @@ def species_edit(latin_name):
                 db.execute(
                     """
                     INSERT INTO plants
-                      (species_id, label, latitude, longitude, zone, planted_at, notes)
+                      (species_id, label, lat, lon, zone, planted_at, notes)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                     """,
                     (species_id, label, lat, lon, zone, planted_at, notes_p),
@@ -602,8 +602,6 @@ def garden_map():
 
     return render_template("map.html", plants=plants)
 
-
-import os
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
