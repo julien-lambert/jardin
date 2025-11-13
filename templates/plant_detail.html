@@ -1,10 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}Plant {{ plant["label"] or plant["id"] }} – Jardin de Devey{% endblock %}
+{% block title %}
+  {{ plant["common_name"] }}{% if plant["variety_name"] %} – {{ plant["variety_name"] }}{% endif %}
+  ({{ plant["label"] or ("#" ~ plant["id"]) }}) – Jardin de Devey
+{% endblock %}
 
 {% block content %}
 
-<div class="d-flex gap-2 mb-3">
+<div class="d-flex gap-2 mb-3 flex-wrap">
   <a href="{{ url_for('plants') }}" class="btn btn-sm btn-outline">
     ← Retour aux plantes
   </a>
@@ -14,28 +17,28 @@
     Modifier cet individu
   </a>
 
-  {# ---- NOUVEAU BOUTON : aller à la fiche espèce ---- #}
-  <a href="{{ url_for('species_detail', latin_name=plant['species_latin_name']) }}"
-     class="btn btn-sm btn-outline-secondary ms-auto">
-    Voir l'espèce
-  </a>
+  {# bouton vers la fiche espèce #}
+  {% if plant["species_latin_name"] %}
+    <a href="{{ url_for('species_detail', latin_name=plant['species_latin_name']) }}"
+       class="btn btn-sm btn-outline-secondary ms-auto">
+      Voir la fiche espèce ({{ plant["species_latin_name"] }})
+    </a>
+  {% endif %}
 </div>
 
 {# ---------------------------------------------------------
-   CAPSULE PRINCIPALE
+   CAPSULE PRINCIPALE (image + taxonomie, style proche species_detail)
 ---------------------------------------------------------- #}
 
 <div class="card shadow-soft mb-4">
   <div class="card-body">
     <div class="row g-3 align-items-start">
 
-      {# --- Colonne image 4x3 --- #}
+      {# --- Colonne image --- #}
       <div class="col-12 col-md-4">
         {% set img_src = None %}
         {% if plant["image_local"] %}
           {% set img_src = url_for('static', filename=plant["image_local"]) %}
-        {% elif plant["variety_image_url"] %}
-          {% set img_src = plant["variety_image_url"] %}
         {% elif plant["species_image_url"] %}
           {% set img_src = plant["species_image_url"] %}
         {% endif %}
@@ -54,7 +57,7 @@
         {% endif %}
       </div>
 
-      {# --- Colonne texte --- #}
+      {# --- Colonne texte : noms, taxonomie, tags espèce/cultivar --- #}
       <div class="col-12 col-md-8">
         <div class="d-flex justify-content-between align-items-start mb-2">
           <div>
@@ -63,8 +66,19 @@
               {% if plant["variety_name"] %} – {{ plant["variety_name"] }}{% endif %}
             </h1>
             {% if plant["species_latin_name"] %}
-              <p class="latin mb-3">
+              <p class="latin mb-2">
                 <em>{{ plant["species_latin_name"] }}</em>
+              </p>
+            {% endif %}
+
+            {% if plant["species_plant_type"] or plant["species_origin"] %}
+              <p class="small mb-2 text-muted">
+                {% if plant["species_plant_type"] %}
+                  {{ plant["species_plant_type"] }}
+                {% endif %}
+                {% if plant["species_origin"] %}
+                  · Origine : {{ plant["species_origin"] }}
+                {% endif %}
               </p>
             {% endif %}
           </div>
@@ -87,22 +101,56 @@
 
               <dt class="col-4">Cultivar</dt>
               <dd class="col-8">{{ plant["variety_name"] or "—" }}</dd>
+
+              {% if plant["species_height_min"] is not none or plant["species_height_max"] is not none %}
+                <dt class="col-4">H. adulte</dt>
+                <dd class="col-8">
+                  {% if plant["species_height_min"] is not none %}
+                    {{ plant["species_height_min"] }} m
+                  {% endif %}
+                  {% if plant["species_height_max"] is not none %}
+                    – {{ plant["species_height_max"] }} m
+                  {% endif %}
+                </dd>
+              {% endif %}
+
+              {% if plant["species_lifespan_min"] is not none or plant["species_lifespan_max"] is not none %}
+                <dt class="col-4">Longévité</dt>
+                <dd class="col-8">
+                  {% if plant["species_lifespan_min"] is not none %}
+                    {{ plant["species_lifespan_min"] }} ans
+                  {% endif %}
+                  {% if plant["species_lifespan_max"] is not none %}
+                    – {{ plant["species_lifespan_max"] }} ans
+                  {% endif %}
+                </dd>
+              {% endif %}
             </dl>
           </div>
 
           <div class="col-sm-6">
-            <div class="mb-1 fw-semibold">Tags (espèce / cultivar)</div>
-            {% set tags = (plant["species_tags"] or "").split(",") %}
-            {% if tags|selectattr('strip')|list %}
+            {% set s_tags = (plant["species_tags"] or "").split(",") %}
+            {% if s_tags|selectattr('strip')|list %}
+              <div class="mb-1 fw-semibold">Tags espèce / cultivar</div>
               <p class="mb-2">
-                {% for t in tags %}
+                {% for t in s_tags %}
                   {% if t.strip() %}
                     <span class="badge bg-tag me-1 mb-1">{{ t.strip() }}</span>
                   {% endif %}
                 {% endfor %}
               </p>
-            {% else %}
-              <p class="text-muted mb-2 small">Aucun tag renseigné.</p>
+            {% endif %}
+
+            {% if plant["species_melliferous_level"] or plant["species_ornamental_interest"] %}
+              <div class="text-muted small">
+                {% if plant["species_melliferous_level"] %}
+                  Mellifère : {{ plant["species_melliferous_level"] }}
+                  {% if plant["species_ornamental_interest"] %} · {% endif %}
+                {% endif %}
+                {% if plant["species_ornamental_interest"] %}
+                  Intérêt ornemental : {{ plant["species_ornamental_interest"] }}
+                {% endif %}
+              </div>
             {% endif %}
           </div>
         </div>
@@ -118,14 +166,14 @@
 </div>
 
 {# ---------------------------------------------------------
-   DONNÉES DE L’INDIVIDU
+   BLOC "Données de l’individu"
 ---------------------------------------------------------- #}
 
 <h2 class="h6 mb-2">Données de l’individu</h2>
 
-<div class="card shadow-soft">
+<div class="card shadow-soft mb-3">
   <div class="card-body small">
-    <div class="row">
+    <div class="row g-3">
       <div class="col-md-6">
         <dl class="row mb-0">
           <dt class="col-5 col-sm-4">Zone</dt>
@@ -143,21 +191,131 @@
           <dd class="col-7 col-sm-8">
             {{ plant["lon"] if plant["lon"] is not none else "—" }}
           </dd>
+
+          <dt class="col-5 col-sm-4">Altitude</dt>
+          <dd class="col-7 col-sm-8">
+            {% if plant["altitude"] is not none %}
+              {{ plant["altitude"] }} m
+            {% else %}
+              —
+            {% endif %}
+          </dd>
+
+          {% if plant["height_current"] is not none %}
+            <dt class="col-5 col-sm-4">Hauteur actuelle</dt>
+            <dd class="col-7 col-sm-8">{{ plant["height_current"] }} m</dd>
+          {% endif %}
+
+          {% if plant["status"] %}
+            <dt class="col-5 col-sm-4">Statut</dt>
+            <dd class="col-7 col-sm-8">{{ plant["status"] }}</dd>
+          {% endif %}
         </dl>
       </div>
 
       <div class="col-md-6">
-        {% if plant["notes"] %}
-          <h3 class="h6">Notes sur l’individu</h3>
-          <p class="mb-0">{{ plant["notes"] }}</p>
-        {% else %}
-          <p class="text-muted mb-0">
-            Aucune note spécifique sur cet individu.
-          </p>
+        {% if plant["tags"] %}
+          <div class="mb-2">
+            <div class="fw-semibold mb-1">Tags individu</div>
+            {% for t in (plant["tags"] or "").split(",") %}
+              {% if t.strip() %}
+                <span class="badge bg-tag me-1 mb-1">{{ t.strip() }}</span>
+              {% endif %}
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if plant["micro_site"] or plant["exposure_local"] or plant["soil_local"] %}
+          <div class="mb-2">
+            <div class="fw-semibold mb-1">Contexte local</div>
+            {% if plant["micro_site"] %}
+              <div>Micro-site : {{ plant["micro_site"] }}</div>
+            {% endif %}
+            {% if plant["exposure_local"] %}
+              <div>Exposition : {{ plant["exposure_local"] }}</div>
+            {% endif %}
+            {% if plant["soil_local"] %}
+              <div>Sol : {{ plant["soil_local"] }}</div>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        {% if plant["acquisition_type"] or plant["acquisition_source"] %}
+          <div class="mb-2">
+            <div class="fw-semibold mb-1">Origine de l’individu</div>
+            <div>
+              {% if plant["acquisition_type"] %}
+                Type : {{ plant["acquisition_type"] }}
+              {% endif %}
+              {% if plant["acquisition_source"] %}
+                <br>Source : {{ plant["acquisition_source"] }}
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+
+        {% if plant["plantnet_obs_id"] %}
+          <div class="mb-2">
+            <div class="fw-semibold mb-1">Référence PlantNet</div>
+            <div>Observation n° {{ plant["plantnet_obs_id"] }}</div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if plant["notes"] or plant["care_notes"] %}
+      <hr class="my-3">
+      <div class="row small">
+        <div class="col-md-6">
+          {% if plant["notes"] %}
+            <h3 class="h6">Notes d’observation</h3>
+            <p class="mb-2">{{ plant["notes"] }}</p>
+          {% endif %}
+        </div>
+        <div class="col-md-6">
+          {% if plant["care_notes"] %}
+            <h3 class="h6">Entretien / suivi</h3>
+            <p class="mb-0">{{ plant["care_notes"] }}</p>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{# ---------------------------------------------------------
+   Optionnel : rappel synthétique des infos d’espèce
+---------------------------------------------------------- #}
+
+{% if plant["species_morphology"] or plant["species_culture"] or plant["species_uses"] %}
+  <div class="card shadow-soft mb-4">
+    <div class="card-body small">
+      <h2 class="h6 mb-2">Résumé botanique (espèce)</h2>
+
+      <div class="row g-3">
+        {% if plant["species_morphology"] %}
+          <div class="col-md-4">
+            <div class="fw-semibold mb-1">Morphologie</div>
+            <p class="mb-0 text-muted">{{ plant["species_morphology"] }}</p>
+          </div>
+        {% endif %}
+
+        {% if plant["species_culture"] %}
+          <div class="col-md-4">
+            <div class="fw-semibold mb-1">Culture</div>
+            <p class="mb-0 text-muted">{{ plant["species_culture"] }}</p>
+          </div>
+        {% endif %}
+
+        {% if plant["species_uses"] %}
+          <div class="col-md-4">
+            <div class="fw-semibold mb-1">Usages</div>
+            <p class="mb-0 text-muted">{{ plant["species_uses"] }}</p>
+          </div>
         {% endif %}
       </div>
     </div>
   </div>
-</div>
+{% endif %}
 
 {% endblock %}

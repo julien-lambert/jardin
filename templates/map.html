@@ -9,14 +9,10 @@
     rel="stylesheet"
   >
   <style>
-    /* La div carte doit occuper la hauteur définie par .map-container (dans ton style.css) */
-    #map {
-      width: 100%;
-      height: 100%;
-    }
-
-    /* On renforce juste un peu le cadre de la carte pour le côté “herbier” */
+    /* Conteneur de la carte : hauteur liée à la fenêtre */
     .map-container {
+      height: calc(100vh - 220px);   /* adapte la valeur si tu veux plus/moins haut */
+      min-height: 320px;
       border-radius: 1rem;
       overflow: hidden;
       border: 1px solid rgba(145, 132, 115, 0.35);
@@ -26,23 +22,35 @@
       background:
         radial-gradient(circle at 20% 15%, #fdfbf7 0, #f6f2ea 45%, #e7dfd0 70%, #d0c6b7 100%);
     }
+
+    /* La div carte remplit entièrement la map-container */
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    @media (max-width: 768px) {
+      .map-container {
+        height: calc(100vh - 260px); /* un peu plus compacte sur mobile */
+      }
+    }
   </style>
 {% endblock %}
 
 {% block content %}
-<h1 class="h3 mb-3">Plan du jardin</h1>
+<h1 class="h3 mb-2">Plan du jardin</h1>
 
-<p class="text-muted mb-2">
+<p class="text-muted mb-3">
   Vue WebGL du terrain de Devey : contour du terrain et individus géolocalisés,
   avec un champ de densité qui fusionne les feuillages de loin, puis des points
   individuels quand on zoome.
 </p>
 
-<div class="map-container mb-3">
+<div class="map-container mb-2">
   <div id="map"></div>
 </div>
 
-<p class="small text-muted">
+<p class="small text-muted mb-0">
   Plan généré côté navigateur à partir de <code>terrain.geojson</code> et des coordonnées
   stockées dans la base.
 </p>

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Jardin de Devey – Ferme des Étoiles{% endblock %}
+{% block title %}Jardin-forêt de la Ferme des Étoiles – Devey{% endblock %}
 
 {% block content %}
 
@@ -8,16 +8,20 @@
 
   <!-- Bloc "hero" -->
   <div class="col-12 col-lg-7">
-    <h1 class="display-6 mb-2">Jardin de Devey</h1>
-    <p class="lead fs-5 mb-3">
-      Atlas vivant du terrain de Devey : arbres, arbustes, haies et plantes
-      mellifères, au service du projet de <strong>Ferme des Étoiles</strong>.
+    <h1 class="display-6 mb-2">Jardin-forêt de la Ferme des Étoiles</h1>
+    <p class="lead fs-5 mb-2">
+      Atlas vivant du terrain de <strong>Devey</strong>, à Saint-Hilaire-Cusson-la-Valmitte :
+      arbres, arbustes, haies et plantes mellifères du jardin-forêt.
+    </p>
+
+    <p class="mb-2">
+      Le projet est porté par <strong>Julien Lambert</strong>. Chaque fiche correspond
+      à un individu réel du jardin-forêt, ancré dans le relief, le sol et la canopée du lieu.
     </p>
 
     <p class="mb-3">
-      Chaque fiche correspond à un individu réel du jardin-forêt. À terme,
-      une étiquette NFC / QR sur chaque plant permettra d’ouvrir la fiche
-      directement avec le téléphone, sur place.
+      Sur le terrain, certaines plantes portent une <strong>puce NFC</strong> : en approchant
+      le téléphone de l’étiquette, la fiche de l’individu s’ouvre directement sur ce site.
     </p>
 
     <div class="d-flex flex-wrap gap-2 mb-3">
@@ -33,8 +37,8 @@
     </div>
 
     <p class="small text-muted mb-0">
-      Le site sert de carnet de terrain : localisation, taxonomie,
-      dates de plantation et notes d’observation pour chaque plant.
+      Le site sert de carnet de terrain : taxonomie, localisation GPS,
+      dates de plantation et observations pour chaque individu suivi.
     </p>
   </div>
 
@@ -42,17 +46,17 @@
   <div class="col-12 col-lg-5">
     <div class="shadow-soft p-3 p-md-4 h-100">
       <h2 class="h6 mb-3 text-uppercase" style="letter-spacing:0.12em;">
-        État du jardin
+        État du jardin-forêt
       </h2>
 
       <div class="row text-center mb-3">
         <div class="col-4 border-end border-light-subtle">
           <div class="fs-3 fw-semibold">{{ stats["plant_count"] }}</div>
-          <div class="small text-muted">plants</div>
+          <div class="small text-muted">individus</div>
         </div>
         <div class="col-4 border-end border-light-subtle">
           <div class="fs-3 fw-semibold">{{ stats["species_count"] }}</div>
-          <div class="small text-muted">espèces / variétés</div>
+          <div class="small text-muted">espèces / cultivars</div>
         </div>
         <div class="col-4">
           <div class="fs-3 fw-semibold">{{ stats["zone_count"] }}</div>
@@ -66,21 +70,22 @@
         Données stockées localement dans <code>jardin.db</code> (SQLite).
       </p>
       <p class="small text-muted mb-0">
-        Les coordonnées GPS lient chaque individu à la carte interactive.
+        Les coordonnées GPS lient chaque individu à la carte interactive
+        et à la géographie réelle du Devey.
       </p>
     </div>
   </div>
 </div>
 
-<!-- Trois petits blocs descriptifs, très courts -->
+<!-- Trois petits blocs descriptifs, courts -->
 <div class="row g-3 mb-4 small">
   <div class="col-12 col-md-4">
     <div class="shadow-soft p-3 h-100">
       <h3 class="h6 mb-2">Le lieu</h3>
       <p class="mb-0">
-        Terrain agricole à Devey, en lisière de plateau. Plantation progressive
-        d’un jardin-forêt mêlant fruitiers anciens, haies biodiverses et plantes
-        mellifères.
+        Terrain agricole au lieu-dit <strong>Le Devey</strong>, en lisière de plateau.
+        Mise en place progressive d’un jardin-forêt mêlant fruitiers anciens,
+        haies biodiverses et strates mellifères.
       </p>
     </div>
   </div>
@@ -89,19 +94,19 @@
     <div class="shadow-soft p-3 h-100">
       <h3 class="h6 mb-2">Ferme des Étoiles</h3>
       <p class="mb-0">
-        Micro-ferme et lieu de médiation scientifique : écologie, agroforesterie
-        et astronomie, avec un planétarium itinérant comme outil central.
+        Micro-ferme et lieu de médiation : écologie, agroforesterie et astronomie,
+        avec un planétarium comme outil central pour relier ciel et paysage.
       </p>
     </div>
   </div>
 
   <div class="col-12 col-md-4">
     <div class="shadow-soft p-3 h-100">
-      <h3 class="h6 mb-2">Étiquettes connectées</h3>
+      <h3 class="h6 mb-2">Étiquettes NFC</h3>
       <p class="mb-0">
-        Chaque plant porte un code (type ABR-LUI-001) et, à terme, une puce
-        NFC / QR. Un simple geste sur le terrain ouvre la fiche complète
-        du plant sur ce site.
+        Chaque plant reçoit un code (ex. <code>ABR-LUI-001</code>) et, à terme,
+        une étiquette <strong>NFC</strong>. Le contact du téléphone sur l’étiquette
+        ouvre sa fiche complète : taxonomie, emplacement, rôle dans le jardin-forêt.
       </p>
     </div>
   </div>

@@ -53,6 +53,12 @@ a:hover {
    NAVBAR – discrète, claire, légèrement botanique
 ------------------------------------------------------- */
 
+.text-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 .navbar-glass {
   background: rgba(253, 251, 247, 0.96);
   backdrop-filter: blur(8px);

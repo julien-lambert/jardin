@@ -2,6 +2,7 @@ from flask import Flask, g, render_template, request, redirect, url_for, flash
 import sqlite3
 from pathlib import Path
 
+
 BASE_DIR = Path(__file__).parent
 DB_PATH = BASE_DIR / "jardin.db"
 
@@ -24,6 +25,74 @@ def close_db(exception):
         db.close()
 
 
+import re
+
+def make_species_code(common_name):
+    """Code espèce : 3 lettres en majuscules, sans accents/espaces."""
+    if not common_name:
+        return "XXX"
+    base = common_name.strip().upper()
+    base = re.sub(r"[^A-Z]", "", base)
+    return (base + "XXX")[:3]
+
+
+def make_variety_code(variety_name):
+    """Code variété : 3 lettres, ou TYP si pas de cultivar."""
+    if not variety_name:
+        return "TYP"
+    base = variety_name.strip().upper()
+    base = re.sub(r"[^A-Z0-9]", "", base)
+    return (base + "XXX")[:3]
+
+
+def generate_label(db, species_id):
+    """
+    Génère un label du type XXX-YYY-NNN en se basant sur
+    species.common_name et species.variety_name.
+    """
+    row = db.execute(
+        """
+        SELECT common_name, variety_name
+        FROM species
+        WHERE id = ?
+        """,
+        (species_id,)
+    ).fetchone()
+
+    if row is None:
+        code_species = "XXX"
+        code_variety = "TYP"
+    else:
+        code_species = make_species_code(row["common_name"])
+        code_variety = make_variety_code(row["variety_name"])
+
+    prefix = "{}-{}-".format(code_species, code_variety)
+
+    last = db.execute(
+        """
+        SELECT label
+        FROM plants
+        WHERE label LIKE ?
+        ORDER BY label DESC
+        LIMIT 1
+        """,
+        (prefix + "%",)
+    ).fetchone()
+
+    if last:
+        try:
+            n_str = last["label"].split("-")[-1]
+            n = int(n_str)
+        except Exception:
+            n = 0
+    else:
+        n = 0
+
+    n += 1
+    num = "{:03d}".format(n)
+
+    return prefix + num
+    
 # ---------- Routes ----------
 
 @app.route("/")
@@ -109,29 +178,54 @@ def plants():
 
 @app.route("/plant/<int:plant_id>")
 def plant_detail(plant_id):
-    """Fiche détaillée d’un plant (individu), avec toutes les infos taxonomiques."""
+    """Fiche détaillée d’un plant (individu), avec toutes les infos taxonomiques et horticoles."""
     db = get_db()
     plant = db.execute(
         """
         SELECT
+            -- champs individu
             plants.id,
+            plants.species_id,
             plants.label,
             plants.zone,
             plants.planted_at,
             plants.lat,
             plants.lon,
+            plants.altitude,
             plants.notes,
             plants.image_local,
+            plants.tags,
+            plants.micro_site,
+            plants.exposure_local,
+            plants.soil_local,
+            plants.height_current,
+            plants.acquisition_type,
+            plants.acquisition_source,
+            plants.plantnet_obs_id,
+            plants.status,
+            plants.care_notes,
 
+            -- champs espèce (base taxonomique)
             species.common_name,
             species.variety_name,
-            species.latin_name  AS species_latin_name,
-            species.family      AS species_family,
-            species.genus       AS species_genus,
-            species.strata      AS species_strata,
-            species.tags        AS species_tags,
-            species.notes       AS species_notes,
-            species.image_url   AS species_image_url
+            species.latin_name      AS species_latin_name,
+            species.family          AS species_family,
+            species.genus           AS species_genus,
+            species.strata          AS species_strata,
+            species.tags            AS species_tags,
+            species.notes           AS species_notes,
+            species.image_url       AS species_image_url,
+            species.origin          AS species_origin,
+            species.plant_type      AS species_plant_type,
+            species.morphology      AS species_morphology,
+            species.culture         AS species_culture,
+            species.uses            AS species_uses,
+            species.melliferous_level     AS species_melliferous_level,
+            species.ornamental_interest   AS species_ornamental_interest,
+            species.lifespan_min          AS species_lifespan_min,
+            species.lifespan_max          AS species_lifespan_max,
+            species.height_min            AS species_height_min,
+            species.height_max            AS species_height_max
         FROM plants
         JOIN species ON plants.species_id = species.id
         WHERE plants.id = ?
@@ -143,26 +237,19 @@ def plant_detail(plant_id):
         return "Plant introuvable", 404
 
     return render_template("plant_detail.html", plant=plant)
-    return render_template("plant_detail.html", plant=plant)
-
 
 @app.route("/plants/<int:plant_id>/edit", methods=["GET", "POST"])
 def plant_edit(plant_id):
     db = get_db()
 
-    # Récupérer l'individu
+    # Récupérer l'individu + un minimum de contexte espèce
     plant = db.execute(
         """
         SELECT
-            plants.id,
-            plants.label,
-            plants.zone,
-            plants.lat,
-            plants.lon,
-            plants.notes,
+            plants.*,
             species.common_name,
-            species.latin_name,
-            species.variety_name
+            species.variety_name,
+            species.latin_name
         FROM plants
         JOIN species ON plants.species_id = species.id
         WHERE plants.id = ?
@@ -174,29 +261,85 @@ def plant_edit(plant_id):
         return "Individu introuvable", 404
 
     if request.method == "POST":
-        # Récupérer les données du formulaire
-        label = request.form.get("label") or None
-        zone = request.form.get("zone") or None
-        notes = request.form.get("notes") or None
+        label   = request.form.get("label") or None
+        zone    = request.form.get("zone") or None
+        notes   = request.form.get("notes") or None
 
-        lat_raw = request.form.get("lat")
-        lon_raw = request.form.get("lon")
+        lat_raw = (request.form.get("lat") or "").strip()
+        lon_raw = (request.form.get("lon") or "").strip()
+        alt_raw = (request.form.get("altitude") or "").strip()
 
-        # Gestion lat / lon : float ou NULL si vide
-        lat = float(lat_raw) if lat_raw.strip() != "" else None
-        lon = float(lon_raw) if lon_raw.strip() != "" else None
+        tags    = request.form.get("tags") or None
+        micro   = request.form.get("micro_site") or None
+        expo    = request.form.get("exposure_local") or None
+        soil    = request.form.get("soil_local") or None
+        h_raw   = (request.form.get("height_current") or "").strip()
+
+        acq_type   = request.form.get("acquisition_type") or None
+        acq_source = request.form.get("acquisition_source") or None
+        plantnet   = request.form.get("plantnet_obs_id") or None
+        status     = request.form.get("status") or None
+        care_notes = request.form.get("care_notes") or None
+
+        image_local = request.form.get("image_local") or None
+
+        def to_float(x):
+            try:
+                return float(x) if x else None
+            except ValueError:
+                return None
+
+        lat = to_float(lat_raw)
+        lon = to_float(lon_raw)
+        alt = to_float(alt_raw)
+        height_current = to_float(h_raw)
 
         db.execute(
             """
             UPDATE plants
-            SET label = ?, zone = ?, lat = ?, lon = ?, notes = ?
+            SET
+              label = ?,
+              zone = ?,
+              lat = ?,
+              lon = ?,
+              altitude = ?,
+              notes = ?,
+              tags = ?,
+              micro_site = ?,
+              exposure_local = ?,
+              soil_local = ?,
+              height_current = ?,
+              acquisition_type = ?,
+              acquisition_source = ?,
+              plantnet_obs_id = ?,
+              status = ?,
+              care_notes = ?,
+              image_local = ?
             WHERE id = ?
             """,
-            (label, zone, lat, lon, notes, plant_id),
+            (
+                label,
+                zone,
+                lat,
+                lon,
+                alt,
+                notes,
+                tags,
+                micro,
+                expo,
+                soil,
+                height_current,
+                acq_type,
+                acq_source,
+                plantnet,
+                status,
+                care_notes,
+                image_local,
+                plant_id,
+            ),
         )
         db.commit()
 
-        # Retour à la fiche de l’individu
         return redirect(url_for("plant_detail", plant_id=plant_id))
 
     # GET : afficher le formulaire pré-rempli
@@ -421,21 +564,89 @@ def species_edit(latin_name):
         action = request.form.get("action")
 
         # 1) Mise à jour des champs communs
+        # 1) Mise à jour des champs communs
         if action == "update_base":
-            family = request.form.get("family") or None
-            genus = request.form.get("genus") or None
-            strata = request.form.get("strata") or None
-            tags = request.form.get("tags") or None
-            notes = request.form.get("notes") or None
-            image_url = request.form.get("image_url") or None
+            family       = request.form.get("family") or None
+            genus        = request.form.get("genus") or None
+            strata       = request.form.get("strata") or None
+            tags         = request.form.get("tags") or None
+            notes        = request.form.get("notes") or None
+            image_url    = request.form.get("image_url") or None
+
+            origin       = request.form.get("origin") or None
+            plant_type   = request.form.get("plant_type") or None
+            morphology   = request.form.get("morphology") or None
+            culture      = request.form.get("culture") or None
+            uses         = request.form.get("uses") or None
+            melliferous  = request.form.get("melliferous_level") or None
+            ornamental   = request.form.get("ornamental_interest") or None
+
+            lifespan_min = request.form.get("lifespan_min") or None
+            lifespan_max = request.form.get("lifespan_max") or None
+            height_min   = request.form.get("height_min") or None
+            height_max   = request.form.get("height_max") or None
+
+            # Cast simple pour les nombres
+            def to_int(x):
+                try:
+                    return int(x) if x is not None and x != "" else None
+                except ValueError:
+                    return None
+
+            def to_float(x):
+                try:
+                    return float(x) if x is not None and x != "" else None
+                except ValueError:
+                    return None
+
+            lifespan_min = to_int(lifespan_min)
+            lifespan_max = to_int(lifespan_max)
+            height_min   = to_float(height_min)
+            height_max   = to_float(height_max)
 
             db.execute(
                 """
                 UPDATE species
-                SET family = ?, genus = ?, strata = ?, tags = ?, notes = ?, image_url = ?
+                SET
+                  family = ?,
+                  genus = ?,
+                  strata = ?,
+                  tags = ?,
+                  notes = ?,
+                  image_url = ?,
+                  origin = ?,
+                  plant_type = ?,
+                  morphology = ?,
+                  culture = ?,
+                  uses = ?,
+                  melliferous_level = ?,
+                  ornamental_interest = ?,
+                  lifespan_min = ?,
+                  lifespan_max = ?,
+                  height_min = ?,
+                  height_max = ?
                 WHERE latin_name = ?
                 """,
-                (family, genus, strata, tags, notes, image_url, latin_name),
+                (
+                    family,
+                    genus,
+                    strata,
+                    tags,
+                    notes,
+                    image_url,
+                    origin,
+                    plant_type,
+                    morphology,
+                    culture,
+                    uses,
+                    melliferous,
+                    ornamental,
+                    lifespan_min,
+                    lifespan_max,
+                    height_min,
+                    height_max,
+                    latin_name,
+                ),
             )
             db.commit()
             return redirect(url_for("species_edit", latin_name=latin_name))
@@ -469,10 +680,10 @@ def species_edit(latin_name):
             db.commit()
             return redirect(url_for("species_edit", latin_name=latin_name))
 
-        # 3) Ajout d'un individu (plant)
+                # 3) Ajout d'un individu (plant)
         elif action == "add_plant":
             species_id = request.form.get("species_id")
-            label = request.form.get("label") or None
+            label_user = (request.form.get("label") or "").strip()
             zone = request.form.get("zone") or None
             planted_at = request.form.get("planted_at") or None
             lat_str = (request.form.get("lat") or "").strip()
@@ -489,13 +700,21 @@ def species_edit(latin_name):
                 lon = None
 
             if species_id:
+                species_id_int = int(species_id)
+
+                # Si aucun label saisi → on génère XXX-YYY-NNN
+                if label_user:
+                    label = label_user
+                else:
+                    label = generate_label(db, species_id_int)
+
                 db.execute(
                     """
                     INSERT INTO plants
                       (species_id, label, lat, lon, zone, planted_at, notes)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                     """,
-                    (species_id, label, lat, lon, zone, planted_at, notes_p),
+                    (species_id_int, label, lat, lon, zone, planted_at, notes_p),
                 )
                 db.commit()
 
@@ -604,5 +823,5 @@ def garden_map():
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    # port déjà déplacé pour éviter le conflit AirPlay
+    app.run(host="0.0.0.0", port=5001, debug=True)

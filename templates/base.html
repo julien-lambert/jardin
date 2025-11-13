@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>{% block title %}Jardin de Devey{% endblock %}</title>
+    <title>{% block title %}LeJardin de Devey{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- Bootstrap -->
@@ -13,13 +13,15 @@
       crossorigin="anonymous"
     >
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+</style>
 
     {% block head_extra %}{% endblock %}
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark navbar-glass mb-4">
   <div class="container-fluid">
-    <a class="navbar-brand" href="{{ url_for('home') }}">Jardin de Devey</a>
+    <a class="navbar-brand" href="{{ url_for('home') }}">Le Jardin Forêt</a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
             data-bs-target="#navbarNav" aria-controls="navbarNav"
             aria-expanded="false" aria-label="Basculer la navigation">
@@ -49,7 +51,7 @@
 </main>
 
 <footer class="text-center text-muted mt-4 mb-3 small">
-    Jardin de Devey – prototype local
+    Le Jardin forêt de la ferme des étoiles – Julien Lambert
 </footer>
 
 <script

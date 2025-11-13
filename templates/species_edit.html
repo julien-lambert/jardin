@@ -19,7 +19,7 @@
   <div class="alert alert-danger py-2 small">{{ error }}</div>
 {% endif %}
 
-{# --- Formulaire : champs communs --- #}
+{# --- Formulaire : champs taxonomiques partagés --- #}
 <div class="card shadow-soft mb-4">
   <div class="card-body">
     <h2 class="h6 mb-3">Champs taxonomiques partagés</h2>
@@ -31,14 +31,29 @@
           <label class="form-label">Nom commun (référence)</label>
           <input type="text" class="form-control" value="{{ base['common_name'] }}" disabled>
         </div>
+
         <div class="col-md-4">
           <label class="form-label">Nom latin</label>
           <input type="text" class="form-control" value="{{ base['latin_name'] }}" disabled>
         </div>
+
         <div class="col-md-4">
           <label class="form-label">Strate</label>
-          <input type="text" class="form-control" name="strata"
-                 value="{{ base['strata'] or '' }}">
+          <select class="form-select" name="strata">
+            <option value=""></option>
+            {% set strat = base['strata'] or '' %}
+            {% for val, label in [
+              ('canopée','Canopée'),
+              ('sous-étage','Sous-étage'),
+              ('arbuste','Arbuste'),
+              ('couvre-sol','Couvre-sol'),
+              ('liane','Liane'),
+              ('racine','Racine / tubercule'),
+              ('autre','Autre')
+            ] %}
+              <option value="{{ val }}" {% if strat == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
         </div>
 
         <div class="col-md-4">
@@ -46,15 +61,37 @@
           <input type="text" class="form-control" name="family"
                  value="{{ base['family'] or '' }}">
         </div>
+
         <div class="col-md-4">
           <label class="form-label">Genre</label>
           <input type="text" class="form-control" name="genus"
                  value="{{ base['genus'] or '' }}">
         </div>
+
         <div class="col-md-4">
-          <label class="form-label">Tags (séparés par des virgules)</label>
-          <input type="text" class="form-control" name="tags"
-                 value="{{ base['tags'] or '' }}">
+          <label class="form-label">Type de plante</label>
+          {% set ptype = base['plant_type'] or '' %}
+          <select class="form-select" name="plant_type">
+            <option value=""></option>
+            {% for val, label in [
+              ('arbre fruitier','Arbre fruitier'),
+              ('arbuste fruitier','Arbuste fruitier'),
+              ('arbre forestier','Arbre forestier'),
+              ('plante vivace','Plante vivace'),
+              ('annuelle','Annuelle'),
+              ('grimpante','Grimpante'),
+              ('couvre-sol','Couvre-sol'),
+              ('autre','Autre')
+            ] %}
+              <option value="{{ val }}" {% if ptype == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Origine (région, flore, etc.)</label>
+          <input type="text" class="form-control" name="origin"
+                 value="{{ base['origin'] or '' }}">
         </div>
 
         <div class="col-md-6">
@@ -64,10 +101,88 @@
         </div>
 
         <div class="col-md-6">
+          <label class="form-label">Tags (séparés par des virgules)</label>
+          <input type="text" class="form-control" name="tags"
+                 value="{{ base['tags'] or '' }}">
+        </div>
+
+        <div class="col-md-6">
           <label class="form-label">Notes générales (espèce)</label>
           <textarea class="form-control" name="notes" rows="2">{{ base['notes'] or '' }}</textarea>
         </div>
       </div>
+
+      <hr class="my-3">
+
+      <details>
+        <summary class="small mb-2">Infos avancées (morphologie, culture, usages…)</summary>
+        <div class="row g-3 mt-1 small">
+
+          <div class="col-md-4">
+            <label class="form-label">Morphologie (résumé)</label>
+            <textarea class="form-control" name="morphology" rows="3">{{ base['morphology'] or '' }}</textarea>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Culture (résumé)</label>
+            <textarea class="form-control" name="culture" rows="3">{{ base['culture'] or '' }}</textarea>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Usages (résumé)</label>
+            <textarea class="form-control" name="uses" rows="3">{{ base['uses'] or '' }}</textarea>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Niveau mellifère</label>
+            {% set melli = base['melliferous_level'] or '' %}
+            <select class="form-select" name="melliferous_level">
+              <option value=""></option>
+              {% for val in ['faible','moyen','bon','très bon'] %}
+                <option value="{{ val }}" {% if melli == val %}selected{% endif %}>{{ val|capitalize }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Intérêt ornemental</label>
+            {% set orn = base['ornamental_interest'] or '' %}
+            <select class="form-select" name="ornamental_interest">
+              <option value=""></option>
+              {% for val in ['faible','moyen','fort'] %}
+                <option value="{{ val }}" {% if orn == val %}selected{% endif %}>{{ val|capitalize }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Longévité (min – max, années)</label>
+            <div class="input-group">
+              <input type="number" class="form-control" name="lifespan_min"
+                     value="{{ base['lifespan_min'] if base['lifespan_min'] is not none else '' }}"
+                     placeholder="min">
+              <span class="input-group-text">–</span>
+              <input type="number" class="form-control" name="lifespan_max"
+                     value="{{ base['lifespan_max'] if base['lifespan_max'] is not none else '' }}"
+                     placeholder="max">
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Hauteur adulte (min – max, m)</label>
+            <div class="input-group">
+              <input type="number" step="0.1" class="form-control" name="height_min"
+                     value="{{ base['height_min'] if base['height_min'] is not none else '' }}"
+                     placeholder="min">
+              <span class="input-group-text">–</span>
+              <input type="number" step="0.1" class="form-control" name="height_max"
+                     value="{{ base['height_max'] if base['height_max'] is not none else '' }}"
+                     placeholder="max">
+            </div>
+          </div>
+
+        </div>
+      </details>
 
       <div class="mt-3">
         <button type="submit" class="btn btn-primary btn-sm">Enregistrer les champs communs</button>
