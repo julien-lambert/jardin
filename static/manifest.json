@@ -1,0 +1,15 @@
+{
+  "name": "Jardin forêt – Devey",
+  "short_name": "Jardin forêt",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f2ea",
+  "theme_color": "#f6f2ea",
+  "icons": [
+    {
+      "src": "icons/apple-touch-icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 from flask import Flask, g, render_template, request, redirect, url_for, flash
-import sqlite3
+import sqlite3 
 from pathlib import Path
+import os
 
 
 BASE_DIR = Path(__file__).parent
@@ -823,5 +824,5 @@ def garden_map():
 
 
 if __name__ == "__main__":
-    # port déjà déplacé pour éviter le conflit AirPlay
-    app.run(host="0.0.0.0", port=5001, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
