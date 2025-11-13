@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Carte du jardin – Jardin de Devey{% endblock %}
+
+{% block head_extra %}
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  >
+{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-3">Carte du jardin</h1>
+
+<p class="text-muted mb-2">
+  Vue d’ensemble des plants géolocalisés et du contour du terrain à Devey.
+</p>
+
+<div id="map" class="map-container mb-3"></div>
+
+<p class="small text-muted">
+  Données cartographiques &copy;
+  <a href="https://www.openstreetmap.org/" target="_blank">OpenStreetMap</a>
+  contributors.
+</p>
+{% endblock %}
+
+{% block scripts_extra %}
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <script>
+    // Données envoyées par Flask
+    const plants = {{ plants | tojson }};
+
+    // Centre par défaut (fallback)
+    const CENTER_LAT = 45.348751;
+    const CENTER_LON = 4.073198;
+
+    // Zoom max souhaité à l’ouverture (on limitera l'auto-zoom à cette valeur)
+    const MAX_INIT_ZOOM = 16;
+
+    // ---------- 1) Fonds de carte (basemaps) ----------
+
+    const cartoPositron = L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+      {
+        maxNativeZoom: 19,
+        maxZoom: 22,
+        attribution:
+          '&copy; OpenStreetMap contributors, &copy; <a href="https://carto.com/" target="_blank">CARTO</a>'
+      }
+    );
+
+    const osmStandard = L.tileLayer(
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {
+        maxNativeZoom: 19,
+        maxZoom: 22,
+        attribution: '&copy; OpenStreetMap contributors'
+      }
+    );
+
+    const openTopo = L.tileLayer(
+      'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+      {
+        maxNativeZoom: 17,
+        maxZoom: 22,
+        attribution:
+          'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap'
+      }
+    );
+
+    const baseLayers = {
+      "Fond clair": cartoPositron,
+      "OSM standard": osmStandard,
+      "Topographique": openTopo
+    };
+
+    // ---------- 2) Création de la carte ----------
+
+    const map = L.map('map', {
+      center: [CENTER_LAT, CENTER_LON],
+      zoom: 17,          // valeur de départ brute (sera ajustée par applyInitialView)
+      minZoom: 14,
+      maxZoom: 22,
+      zoomAnimation: false,
+      scrollWheelZoom: true,
+      dragging: true,
+      layers: [cartoPositron]   // IMPORTANT : fond par défaut
+    });
+
+    const overlays = {};
+
+    // ---------- 3) Points des plants ----------
+
+    const coords = [];
+    const plantsLayer = L.layerGroup().addTo(map);
+    overlays["Individus"] = plantsLayer;
+
+    plants.forEach(p => {
+      if (p.lat !== null && p.lon !== null) {
+        const latlng = [p.lat, p.lon];
+        coords.push(latlng);
+
+        const marker = L.circleMarker(latlng, {
+          radius: 5,
+          color: "#7b5e4a",
+          weight: 1,
+          fillColor: "#556b2f",
+          fillOpacity: 0.85,
+          interactive: true
+        });
+
+        const label   = p.label ? `<strong>${p.label}</strong><br>` : "";
+        const common  = p.common_name || "Nom commun à préciser";
+        const variety = p.variety_name ? `‘${p.variety_name}’` : "";
+        const zone    = p.zone ? `<br><span class="small text-muted">Zone : ${p.zone}</span>` : "";
+
+        marker.bindPopup(`${label}${common} ${variety}${zone}`);
+
+        marker.on("mouseover", () => {
+          marker.setStyle({ radius: 6, fillOpacity: 1 });
+        });
+        marker.on("mouseout", () => {
+          marker.setStyle({ radius: 5, fillOpacity: 0.85 });
+        });
+
+        plantsLayer.addLayer(marker);
+      }
+    });
+
+    // ---------- 4) Élargissement d’emprise ----------
+
+    function expandBounds(bounds, factor) {
+      const sw = bounds.getSouthWest();
+      const ne = bounds.getNorthEast();
+
+      const latSpan = ne.lat - sw.lat;
+      const lonSpan = ne.lng - sw.lng;
+
+      const extraLat = latSpan * factor;
+      const extraLon = lonSpan * factor;
+
+      return L.latLngBounds(
+        L.latLng(sw.lat - extraLat, sw.lng - extraLon),
+        L.latLng(ne.lat + extraLat, ne.lng + extraLon)
+      );
+    }
+
+    // Fonction unique pour fixer la vue initiale
+    function applyInitialView(terrainBoundsOrNull) {
+      let bounds = null;
+
+      if (terrainBoundsOrNull) {
+        bounds = terrainBoundsOrNull;
+      }
+
+      if (coords.length > 0) {
+        const plantsBounds = L.latLngBounds(coords);
+        bounds = bounds ? bounds.extend(plantsBounds) : plantsBounds;
+      }
+
+      if (bounds) {
+        // factor = 0.5 → emprise environ ~2x en largeur/hauteur
+        const expanded = expandBounds(bounds, 0.5);
+        map.fitBounds(expanded, { padding: [50, 50] });
+
+        // Limiter l’auto-zoom si Leaflet va trop près
+        const z = map.getZoom();
+        if (z > MAX_INIT_ZOOM) {
+          map.setZoom(MAX_INIT_ZOOM);
+        }
+      } else {
+        map.setView([CENTER_LAT, CENTER_LON], MAX_INIT_ZOOM);
+      }
+    }
+
+    // ---------- 5) Contour du terrain (GeoJSON) ----------
+
+    fetch("{{ url_for('static', filename='data/terrain.geojson') }}")
+      .then(resp => resp.json())
+      .then(geojson => {
+        const terrainLayer = L.geoJSON(geojson, {
+          style: {
+            color: "#7b5e4a",
+            weight: 2,
+            fillColor: "#cfd7c6",
+            fillOpacity: 0.25
+          },
+          interactive: false
+        }).addTo(map);
+
+        overlays["Contour du terrain"] = terrainLayer;
+        plantsLayer.bringToFront();
+
+        const terrainBounds = terrainLayer.getBounds();
+        applyInitialView(terrainBounds);
+      })
+      .catch(err => {
+        console.error("Erreur GeoJSON terrain :", err);
+        applyInitialView(null);
+      });
+
+    // ---------- 6) Contrôle des couches ----------
+
+    L.control.layers(baseLayers, overlays, {
+      position: 'topright',
+      collapsed: true
+    }).addTo(map);
+  </script>
+{% endblock %}

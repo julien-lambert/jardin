@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier {{ base["common_name"] or base["latin_name"] }}{% endblock %}
+
+{% block content %}
+<div class="d-flex gap-2 mb-3">
+  <a href="{{ url_for('species_detail', latin_name=base['latin_name']) }}"
+     class="btn btn-sm btn-outline-secondary">
+    ← Retour à la fiche
+  </a>
+  <a href="{{ url_for('species_list') }}" class="btn btn-sm btn-outline-secondary">
+    Taxonomie
+  </a>
+</div>
+
+<h1 class="h4 mb-3">Modifier l'espèce</h1>
+
+{% if error %}
+  <div class="alert alert-danger py-2 small">{{ error }}</div>
+{% endif %}
+
+{# --- Formulaire : champs communs --- #}
+<div class="card shadow-soft mb-4">
+  <div class="card-body">
+    <h2 class="h6 mb-3">Champs taxonomiques partagés</h2>
+    <form method="post">
+      <input type="hidden" name="action" value="update_base">
+
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Nom commun (référence)</label>
+          <input type="text" class="form-control" value="{{ base['common_name'] }}" disabled>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Nom latin</label>
+          <input type="text" class="form-control" value="{{ base['latin_name'] }}" disabled>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Strate</label>
+          <input type="text" class="form-control" name="strata"
+                 value="{{ base['strata'] or '' }}">
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Famille</label>
+          <input type="text" class="form-control" name="family"
+                 value="{{ base['family'] or '' }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Genre</label>
+          <input type="text" class="form-control" name="genus"
+                 value="{{ base['genus'] or '' }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Tags (séparés par des virgules)</label>
+          <input type="text" class="form-control" name="tags"
+                 value="{{ base['tags'] or '' }}">
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">URL de l'image</label>
+          <input type="url" class="form-control" name="image_url"
+                 value="{{ base['image_url'] or '' }}">
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Notes générales (espèce)</label>
+          <textarea class="form-control" name="notes" rows="2">{{ base['notes'] or '' }}</textarea>
+        </div>
+      </div>
+
+      <div class="mt-3">
+        <button type="submit" class="btn btn-primary btn-sm">Enregistrer les champs communs</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# --- Formulaire : ajout d'un cultivar --- #}
+<div class="card shadow-soft mb-4">
+  <div class="card-body">
+    <h2 class="h6 mb-3">Ajouter un cultivar / une variété</h2>
+    <form method="post">
+      <input type="hidden" name="action" value="add_cultivar">
+
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Nom commun</label>
+          <input type="text" class="form-control" name="common_name"
+                 placeholder="Abricotier, Pommier…"
+                 value="{{ base['common_name'] or '' }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Cultivar / variété</label>
+          <input type="text" class="form-control" name="variety_name"
+                 placeholder="Luizet, Reine des Reinettes…">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Tags (séparés par des virgules)</label>
+          <input type="text" class="form-control" name="c_tags"
+                 placeholder="fruitier,noyau,ancien…">
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Notes (cultivar)</label>
+          <textarea class="form-control" name="c_notes" rows="2"
+                    placeholder="Porte-greffe, vigueur, rusticité…"></textarea>
+        </div>
+      </div>
+
+      <div class="mt-3">
+        <button type="submit" class="btn btn-primary btn-sm">Ajouter le cultivar</button>
+      </div>
+    </form>
+    <hr class="my-3">
+
+    <h3 class="h6 mb-2">Cultivars existants</h3>
+    {% if variants %}
+      <ul class="list-group list-group-flush small">
+        {% for v in variants %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <span class="fw-semibold">
+                {{ v["common_name"] }}
+                {% if v["variety_name"] %}
+                  – {{ v["variety_name"] }}
+                {% endif %}
+              </span>
+              {% if v["notes"] %}
+                <span class="text-muted"> — {{ v["notes"] }}</span>
+              {% endif %}
+              <div class="text-muted">
+                {{ v["plant_count"] }} individu(s) planté(s) associé(s)
+              </div>
+            </div>
+
+            <form method="post" class="ms-2"
+                  onsubmit="return confirm('Supprimer ce cultivar ? Cette action est définitive.');">
+              <input type="hidden" name="action" value="delete_variant">
+              <input type="hidden" name="variant_id" value="{{ v['id'] }}">
+              <button type="submit"
+                      class="btn btn-sm {% if v['plant_count'] > 0 %}btn-outline-secondary{% else %}btn-outline-danger{% endif %}"
+                      {% if v['plant_count'] > 0 %}disabled title="Ce cultivar a encore des individus plantés."{% endif %}>
+                Supprimer
+              </button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-muted fst-italic mb-0">Aucun cultivar enregistré pour le moment.</p>
+    {% endif %}
+  </div>
+</div>
+
+{# --- Formulaire : ajout d'un individu planté --- #}
+<div class="card shadow-soft mb-4">
+  <div class="card-body">
+    <h2 class="h6 mb-3">Ajouter un individu planté</h2>
+
+    {% if variants %}
+      <form method="post">
+        <input type="hidden" name="action" value="add_plant">
+
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Cultivar / variété</label>
+            <select class="form-select" name="species_id" required>
+              {% for v in variants %}
+                <option value="{{ v['id'] }}">
+                  {{ v['common_name'] }}
+                  {% if v['variety_name'] %} – {{ v['variety_name'] }}{% endif %}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Étiquette / code (label)</label>
+            <input type="text" class="form-control" name="label"
+                   placeholder="ABR-LUI-001">
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Zone</label>
+            <input type="text" class="form-control" name="zone"
+                   placeholder="Îlot nord, haie est…">
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Latitude</label>
+            <input type="text" class="form-control" name="lat"
+                   placeholder="45.00010">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Longitude</label>
+            <input type="text" class="form-control" name="lon"
+                   placeholder="4.00020">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Date de plantation</label>
+            <input type="date" class="form-control" name="planted_at">
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">Notes (individu)</label>
+            <textarea class="form-control" name="notes_p" rows="2"
+                      placeholder="Planté sur butte, exposition est, etc."></textarea>
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <button type="submit" class="btn btn-primary btn-sm">Ajouter l'individu</button>
+        </div>
+      </form>
+    {% else %}
+      <p class="text-muted fst-italic mb-0">
+        Aucun cultivar n'est encore défini : ajoute d'abord un cultivar avant de créer des individus.
+      </p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card border-danger mb-4">
+  <div class="card-body small">
+    <h2 class="h6 text-danger mb-2">Supprimer l'espèce entière</h2>
+    <p class="mb-2">
+      Cette action supprime tous les cultivars de cette espèce dans la base.
+      Elle est uniquement possible s'il n'existe plus aucun individu planté
+      associé à cette espèce.
+    </p>
+    <form method="post"
+          onsubmit="return confirm('Supprimer toute cette espèce et tous ses cultivars ? Cette action est définitive.');">
+      <input type="hidden" name="action" value="delete_species">
+      <button type="submit" class="btn btn-sm btn-danger">
+        Supprimer l'espèce
+      </button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

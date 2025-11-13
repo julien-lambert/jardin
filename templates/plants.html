@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Plants – Jardin de Devey{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-3">Tous les plants</h1>
+
+<form class="row g-2 align-items-end mb-4" method="get">
+  <div class="col-md-5">
+    <label class="form-label small text-muted">Recherche</label>
+    <input type="text" class="form-control" name="q"
+           placeholder="Nom, variété, étiquette, note…"
+           value="{{ search }}">
+  </div>
+  <div class="col-md-3">
+    <label class="form-label small text-muted">Zone</label>
+    <select class="form-select" name="zone">
+      <option value="">Toutes les zones</option>
+      {% for z in zones %}
+        <option value="{{ z }}" {% if z == zone_filter %}selected{% endif %}>{{ z }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2 d-grid">
+    <button type="submit" class="btn btn-primary">Filtrer</button>
+  </div>
+</form>
+
+<div class="row g-3">
+  {% for p in plants %}
+    <div class="col-12 col-md-6 col-lg-4">
+      <a href="{{ url_for('plant_detail', plant_id=p['id']) }}" class="plant-card text-decoration-none">
+        <div class="card h-100 shadow-soft">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-1">
+              <h3 class="h6 mb-0">
+                {{ p["common_name"] }}
+                {% if p["variety_name"] %} – {{ p["variety_name"] }}{% endif %}
+              </h3>
+              <span class="badge bg-outline">{{ p["label"] or ("#" ~ p["id"]) }}</span>
+            </div>
+            {% if p["latin_name"] %}
+              <p class="latin small text-muted mb-1"><em>{{ p["latin_name"] }}</em></p>
+            {% endif %}
+            <div class="small text-muted mb-2">
+              {% if p["zone"] %}
+                <span class="badge bg-zone me-1">{{ p["zone"] }}</span>
+              {% endif %}
+            </div>
+            {# Tags basés sur la colonne notes, séparés par des virgules #}
+            {% if p["notes"] %}
+              <div class="mb-2">
+                {% for t in p["notes"].split(",") %}
+                  <span class="badge bg-tag">{{ t.strip() }}</span>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </a>
+    </div>
+  {% endfor %}
+</div>
+
+{% if not plants %}
+  <p class="text-muted fst-italic mt-3">Aucun plant trouvé avec ces critères.</p>
+{% endif %}
+{% endblock %}

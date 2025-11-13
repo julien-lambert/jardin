@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Ajouter une espèce{% endblock %}
+
+{% block content %}
+<div class="d-flex gap-2 mb-3">
+  <a href="{{ url_for('species_list') }}" class="btn btn-sm btn-outline-secondary">
+    ← Retour à la taxonomie
+  </a>
+</div>
+
+<h1 class="h4 mb-3">Ajouter une nouvelle espèce</h1>
+
+{% if error %}
+  <div class="alert alert-danger py-2 small">{{ error }}</div>
+{% endif %}
+
+<div class="card shadow-soft mb-4">
+  <div class="card-body">
+    <form method="post" class="small">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Nom commun</label>
+          <input type="text" class="form-control" name="common_name"
+                 placeholder="Abricotier, Pommier…"
+                 value="{{ form.common_name if form is defined else '' }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Nom latin</label>
+          <input type="text" class="form-control" name="latin_name"
+                 placeholder="Prunus armeniaca L."
+                 value="{{ form.latin_name if form is defined else '' }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Cultivar / variété (optionnel)</label>
+          <input type="text" class="form-control" name="variety_name"
+                 placeholder="Luizet, Reine des Reinettes…"
+                 value="{{ form.variety_name if form is defined else '' }}">
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Famille</label>
+          <input type="text" class="form-control" name="family"
+                 placeholder="Rosaceae…"
+                 value="{{ form.family if form is defined else '' }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Genre</label>
+          <input type="text" class="form-control" name="genus"
+                 placeholder="Prunus, Malus…"
+                 value="{{ form.genus if form is defined else '' }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Strate</label>
+          <input type="text" class="form-control" name="strata"
+                 placeholder="arbre, arbuste, couvre-sol…"
+                 value="{{ form.strata if form is defined else '' }}">
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Tags (séparés par des virgules)</label>
+          <input type="text" class="form-control" name="tags"
+                 placeholder="fruitier,noyau,ancien…"
+                 value="{{ form.tags if form is defined else '' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">URL de l'image (optionnel)</label>
+          <input type="url" class="form-control" name="image_url"
+                 placeholder="https://upload.wikimedia.org/…"
+                 value="{{ form.image_url if form is defined else '' }}">
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Notes</label>
+          <textarea class="form-control" name="notes" rows="2"
+                    placeholder="Infos générales sur l'espèce ou le cultivar de référence…">{{ form.notes if form is defined else '' }}</textarea>
+        </div>
+      </div>
+
+      <div class="mt-3">
+        <button type="submit" class="btn btn-primary btn-sm">
+          Ajouter l'espèce
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

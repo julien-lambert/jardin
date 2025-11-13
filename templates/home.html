@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Jardin de Devey – Ferme des Étoiles{% endblock %}
+
+{% block content %}
+
+<div class="row g-4 align-items-start mb-4">
+
+  <!-- Bloc "hero" -->
+  <div class="col-12 col-lg-7">
+    <h1 class="display-6 mb-2">Jardin de Devey</h1>
+    <p class="lead fs-5 mb-3">
+      Atlas vivant du terrain de Devey : arbres, arbustes, haies et plantes
+      mellifères, au service du projet de <strong>Ferme des Étoiles</strong>.
+    </p>
+
+    <p class="mb-3">
+      Chaque fiche correspond à un individu réel du jardin-forêt. À terme,
+      une étiquette NFC / QR sur chaque plant permettra d’ouvrir la fiche
+      directement avec le téléphone, sur place.
+    </p>
+
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <a href="{{ url_for('plants') }}" class="btn btn-primary">
+        Voir les plants
+      </a>
+      <a href="{{ url_for('garden_map') }}" class="btn btn-outline">
+        Carte du terrain
+      </a>
+      <a href="{{ url_for('species_list') }}" class="btn btn-outline">
+        Taxonomie
+      </a>
+    </div>
+
+    <p class="small text-muted mb-0">
+      Le site sert de carnet de terrain : localisation, taxonomie,
+      dates de plantation et notes d’observation pour chaque plant.
+    </p>
+  </div>
+
+  <!-- Carte de stats -->
+  <div class="col-12 col-lg-5">
+    <div class="shadow-soft p-3 p-md-4 h-100">
+      <h2 class="h6 mb-3 text-uppercase" style="letter-spacing:0.12em;">
+        État du jardin
+      </h2>
+
+      <div class="row text-center mb-3">
+        <div class="col-4 border-end border-light-subtle">
+          <div class="fs-3 fw-semibold">{{ stats["plant_count"] }}</div>
+          <div class="small text-muted">plants</div>
+        </div>
+        <div class="col-4 border-end border-light-subtle">
+          <div class="fs-3 fw-semibold">{{ stats["species_count"] }}</div>
+          <div class="small text-muted">espèces / variétés</div>
+        </div>
+        <div class="col-4">
+          <div class="fs-3 fw-semibold">{{ stats["zone_count"] }}</div>
+          <div class="small text-muted">zones</div>
+        </div>
+      </div>
+
+      <hr class="my-3">
+
+      <p class="small mb-1">
+        Données stockées localement dans <code>jardin.db</code> (SQLite).
+      </p>
+      <p class="small text-muted mb-0">
+        Les coordonnées GPS lient chaque individu à la carte interactive.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Trois petits blocs descriptifs, très courts -->
+<div class="row g-3 mb-4 small">
+  <div class="col-12 col-md-4">
+    <div class="shadow-soft p-3 h-100">
+      <h3 class="h6 mb-2">Le lieu</h3>
+      <p class="mb-0">
+        Terrain agricole à Devey, en lisière de plateau. Plantation progressive
+        d’un jardin-forêt mêlant fruitiers anciens, haies biodiverses et plantes
+        mellifères.
+      </p>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-4">
+    <div class="shadow-soft p-3 h-100">
+      <h3 class="h6 mb-2">Ferme des Étoiles</h3>
+      <p class="mb-0">
+        Micro-ferme et lieu de médiation scientifique : écologie, agroforesterie
+        et astronomie, avec un planétarium itinérant comme outil central.
+      </p>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-4">
+    <div class="shadow-soft p-3 h-100">
+      <h3 class="h6 mb-2">Étiquettes connectées</h3>
+      <p class="mb-0">
+        Chaque plant porte un code (type ABR-LUI-001) et, à terme, une puce
+        NFC / QR. Un simple geste sur le terrain ouvre la fiche complète
+        du plant sur ce site.
+      </p>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

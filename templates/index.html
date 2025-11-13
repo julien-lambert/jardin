@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Jardin de Devey{% endblock %}
+
+{% block content %}
+<section class="row align-items-center mb-5">
+  <div class="col-md-6 mb-3 mb-md-0">
+    <h1 class="display-6 fw-bold mb-3">Jardin de Devey</h1>
+    <p class="lead mb-3">
+      Atlas vivant des arbres, arbustes et haies. Vue botanique, carte du terrain et fiches détaillées de chaque plant.
+    </p>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{{ url_for('plants') }}" class="btn btn-primary btn-lg">Voir les plants</a>
+      <a href="{{ url_for('garden_map') }}" class="btn btn-outline-light btn-lg">Voir la carte</a>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="stats-card p-3 p-md-4 rounded-4 shadow-soft">
+      <div class="row text-center">
+        <div class="col-4 border-end">
+          <div class="h3 fw-bold mb-0">{{ stats.plant_count }}</div>
+          <div class="text-muted small">plants</div>
+        </div>
+        <div class="col-4 border-end">
+          <div class="h3 fw-bold mb-0">{{ stats.species_count }}</div>
+          <div class="text-muted small">espèces / variétés</div>
+        </div>
+        <div class="col-4">
+          <div class="h3 fw-bold mb-0">{{ stats.zone_count }}</div>
+          <div class="text-muted small">zones</div>
+        </div>
+      </div>
+      <hr>
+      <p class="small mb-0 text-muted">
+        Données stockées localement dans <code>jardin.db</code>.
+      </p>
+    </div>
+  </div>
+</section>
+{% endblock %}

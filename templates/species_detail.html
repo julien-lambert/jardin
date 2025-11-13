@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}{{ base["common_name"] or base["latin_name"] }} – Taxonomie{% endblock %}
+
+{% block content %}
+<div class="d-flex gap-2 mb-3">
+  <a href="{{ url_for('species_list') }}" class="btn btn-sm btn-outline-secondary">
+    ← Retour à la taxonomie
+  </a>
+  <a href="{{ url_for('species_edit', latin_name=base['latin_name']) }}"
+     class="btn btn-sm btn-outline-primary">
+    Modifier
+  </a>
+</div>
+
+<div class="card shadow-soft mb-4">
+  <div class="card-body">
+    <div class="row g-3 align-items-start">
+      {# Colonne image #}
+      <div class="col-12 col-md-4">
+        {% if base["image_url"] %}
+          <div class="ratio ratio-4x3 mb-2">
+            <img src="{{ base['image_url'] }}"
+                 alt="Photo de {{ base['latin_name'] or base['common_name'] }}"
+                 class="img-fluid rounded-3"
+                 style="object-fit: cover;">
+          </div>
+        {% else %}
+          <div class="ratio ratio-4x3 mb-2 bg-light rounded-3 d-flex align-items-center justify-content-center text-muted">
+            <span class="small">Aucune image</span>
+          </div>
+        {% endif %}
+      </div>
+
+      {# Colonne texte #}
+      <div class="col-12 col-md-8">
+        <h1 class="h4 mb-1">
+          {{ base["common_name"] or base["latin_name"] }}
+        </h1>
+        {% if base["latin_name"] %}
+          <p class="latin mb-3"><em>{{ base["latin_name"] }}</em></p>
+        {% endif %}
+
+        <div class="row small mb-3">
+          <div class="col-sm-6">
+            <dl class="row mb-0">
+              <dt class="col-4">Famille</dt>
+              <dd class="col-8">{{ base["family"] or "—" }}</dd>
+
+              <dt class="col-4">Genre</dt>
+              <dd class="col-8">{{ base["genus"] or "—" }}</dd>
+
+              <dt class="col-4">Strate</dt>
+              <dd class="col-8">{{ base["strata"] or "—" }}</dd>
+            </dl>
+          </div>
+          <div class="col-sm-6">
+            {% if base["tags"] %}
+              <div class="mb-1 fw-semibold">Tags</div>
+              <p class="mb-2">
+                {% for t in base["tags"].split(",") %}
+                  <span class="badge bg-tag me-1 mb-1">{{ t.strip() }}</span>
+                {% endfor %}
+              </p>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if base["notes"] %}
+          <p class="small text-muted mb-0">
+            {{ base["notes"] }}
+          </p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{# --- Cultivars / Variétés --- #}
+<h2 class="h5 mb-2">Cultivars / Variétés</h2>
+{% if variants %}
+  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3 mb-4">
+    {% for v in variants %}
+      <div class="col">
+        <div class="card shadow-soft h-100">
+          <div class="card-body small">
+            <p class="mb-1 fw-semibold">
+              {% if v["variety_name"] %}
+                {{ v["common_name"] }} – {{ v["variety_name"] }}
+              {% else %}
+                {{ v["common_name"] }} (type)
+              {% endif %}
+            </p>
+            {% if v["notes"] %}
+              <p class="text-muted mb-2">{{ v["notes"] }}</p>
+            {% endif %}
+            {% if v["tags"] %}
+              <p class="mb-0">
+                {% for t in v["tags"].split(",") %}
+                  <span class="badge bg-tag me-1 mb-1">{{ t.strip() }}</span>
+                {% endfor %}
+              </p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="text-muted fst-italic mb-4">Aucun cultivar enregistré pour le moment.</p>
+{% endif %}
+
+{# --- Individus plantés --- #}
+<h2 class="h5 mb-2">Individus plantés dans le jardin</h2>
+
+{% if plants %}
+  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3 mb-4">
+    {% for p in plants %}
+      <div class="col">
+        <a href="{{ url_for('plant_detail', plant_id=p['id']) }}"
+           class="text-decoration-none text-reset">
+          <div class="card shadow-soft h-100">
+            <div class="card-body small">
+              <div class="d-flex justify-content-between align-items-start mb-1">
+                <div>
+                  <div class="fw-semibold">
+                    {{ p["common_name"] }}
+                    {% if p["variety_name"] %}
+                      – {{ p["variety_name"] }}
+                    {% endif %}
+                  </div>
+                  {% if p["zone"] %}
+                    <div class="text-muted">Zone : {{ p["zone"] }}</div>
+                  {% endif %}
+                </div>
+                <span class="badge bg-outline">{{ p["label"] or ("#" ~ p["id"]) }}</span>
+              </div>
+              {% if p["planted_at"] %}
+                <div class="text-muted">Planté le {{ p["planted_at"] }}</div>
+              {% endif %}
+              {% if p["notes"] %}
+                <p class="text-muted mb-0 mt-1">{{ p["notes"] }}</p>
+              {% endif %}
+            </div>
+          </div>
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="text-muted fst-italic">Aucun individu de cette espèce n’est encore enregistré.</p>
+{% endif %}
+
+{% endblock %}
