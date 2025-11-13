@@ -822,6 +822,8 @@ def garden_map():
     return render_template("map.html", plants=plants)
 
 
+import os
+
 if __name__ == "__main__":
-    # port déjà déplacé pour éviter le conflit AirPlay
-    app.run(host="0.0.0.0", port=5001, debug=True)
+    port = int(os.environ.get("PORT", 5001))  # 5001 en local, PORT imposé sur Render
+    app.run(host="0.0.0.0", port=port, debug=True)
