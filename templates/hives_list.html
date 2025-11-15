@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Ruches – Jardin de Devey{% endblock %}
+
+{% block content %}
+
+<h1 class="h3 mb-3">Ruches du jardin</h1>
+
+{% if hives %}
+  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+    {% for h in hives %}
+      <div class="col">
+        <a href="{{ url_for('hive_detail', hive_id=h['id']) }}"
+           class="text-decoration-none text-reset">
+          <div class="card shadow-soft h-100">
+            <div class="card-body small d-flex flex-column">
+
+              <div class="d-flex justify-content-between align-items-start mb-1">
+                <div>
+                  <div class="fw-semibold">
+                    {{ h["name"] or ("Ruche " ~ h["code"]) }}
+                  </div>
+                  <div class="text-muted">
+                    {{ h["hive_type"] or "Type à préciser" }}
+                  </div>
+                </div>
+                <span class="badge bg-outline">
+                  {{ h["code"] }}
+                </span>
+              </div>
+
+              {% if h["location_label"] %}
+                <p class="mb-2 text-muted">
+                  {{ h["location_label"] }}
+                </p>
+              {% endif %}
+
+              <div class="mt-auto small text-muted">
+                {% if h["status"] %}
+                  <span class="badge bg-tag me-1 mb-1">
+                    {{ h["status"] }}
+                  </span>
+                {% endif %}
+
+                {% if h["year_installed"] %}
+                  Installée en {{ h["year_installed"] }}
+                {% endif %}
+
+                {% if h["harvest_count"] and h["harvest_count"] > 0 %}
+                  <br>
+                  Miel cumulé :
+                  {{ "%.1f"|format(h["total_honey_kg"] or 0) }} kg
+                  ({{ h["harvest_count"] }} récolte{% if h["harvest_count"] > 1 %}s{% endif %})
+                {% else %}
+                  <br>
+                  Aucune récolte enregistrée.
+                {% endif %}
+              </div>
+
+            </div>
+          </div>
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="text-muted fst-italic">
+    Aucune ruche enregistrée pour l’instant.
+  </p>
+{% endif %}
+
+{% endblock %}

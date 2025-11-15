@@ -912,13 +912,136 @@ def garden_map():
 
     return render_template("map.html", plants=plants)
 
+@app.route("/hives")
+def hives_list():
+    db = get_db()
+
+    hives = db.execute(
+        """
+        SELECT
+            h.id,
+            h.code,
+            h.name,
+            h.hive_type,
+            h.location_label,
+            h.status,
+            h.bee_breed AS bee_strain,   -- <<< alias pour le template
+            h.queen_year,
+            h.origin,
+            COUNT(DISTINCT i.id) AS inspections_count,
+            COALESCE(SUM(ha.weight_kg), 0) AS honey_kg
+        FROM hives AS h
+        LEFT JOIN hive_inspections AS i
+            ON i.hive_id = h.id
+        LEFT JOIN hive_harvests AS ha
+            ON ha.hive_id = h.id
+        GROUP BY
+            h.id,
+            h.code,
+            h.name,
+            h.hive_type,
+            h.location_label,
+            h.status,
+            h.bee_breed,
+            h.queen_year,
+            h.origin
+        ORDER BY h.code
+        """
+    ).fetchall()
+
+    return render_template("hives_list.html", hives=hives)
+
+
+@app.route("/hive/<int:hive_id>")
+def hive_detail(hive_id):
+    """Fiche détaillée d’une ruche : matériel, colonie actuelle, récoltes."""
+    db = get_db()
+
+    hive = db.execute(
+        """
+        SELECT *
+        FROM hives
+        WHERE id = ?
+        """,
+        (hive_id,),
+    ).fetchone()
+
+    if hive is None:
+        return "Ruche introuvable", 404
+
+    # Colonie actuelle (end_year NULL ou dans le futur)
+    current_colony = db.execute(
+        """
+        SELECT *
+        FROM hive_colonies
+        WHERE hive_id = ?
+          AND (end_year IS NULL OR end_year >= strftime('%Y','now'))
+        ORDER BY start_year DESC
+        LIMIT 1
+        """,
+        (hive_id,),
+    ).fetchone()
+
+    # Historique des colonies (pour mémoire, si tu veux les afficher plus tard)
+    colonies = db.execute(
+        """
+        SELECT *
+        FROM hive_colonies
+        WHERE hive_id = ?
+        ORDER BY start_year
+        """,
+        (hive_id,),
+    ).fetchall()
+
+    # Récoltes détaillées
+    harvests = db.execute(
+         """
+        SELECT
+            ha.id,
+            ha.date AS harvest_date,   -- alias pour coller au template
+            ha.weight_kg,
+            ha.moisture_pct,
+            ha.honey_type,
+            ha.notes
+        FROM hive_harvests AS ha
+        WHERE ha.hive_id = ?
+        ORDER BY ha.date DESC
+        """,
+        (hive_id,),
+    ).fetchall()
+
+    # Synthèse annuelle de production
+    yearly_stats = db.execute(
+        """
+        SELECT
+            strftime('%Y', date) AS year,
+            SUM(weight_kg) AS total_weight,
+            COUNT(*) AS harvest_count
+        FROM hive_harvests
+        WHERE hive_id = ?
+        GROUP BY year
+        ORDER BY year DESC
+        """,
+        (hive_id,),
+    ).fetchall()
+
+    return render_template(
+        "hive_detail.html",
+        hive=hive,
+        current_colony=current_colony,
+        colonies=colonies,
+        harvests=harvests,
+        yearly_stats=yearly_stats,
+    )
+
+
 
 import os
 
 if __name__ == "__main__":
 # <<<<<<< HEAD
-     port = int(os.environ.get("PORT", 5000))
-     app.run(host="0.0.0.0", port=port)
+#     port = int(os.environ.get("PORT", 5000))
+ #    app.run(host="0.0.0.0", port=port)
 # =======
-#    port = int(os.environ.get("PORT", 5001))  # 5001 en local, PORT imposé sur Render
-#    app.run(host="0.0.0.0", port=port, debug=True)
+    port = int(os.environ.get("PORT", 5001))  # 5001 en local, PORT imposé sur Render
+    app.run(host="0.0.0.0", port=port, debug=True)

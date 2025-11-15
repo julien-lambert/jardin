@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {{ hive["name"] or ("Ruche " ~ hive["code"]) }} – Jardin de Devey
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex gap-2 mb-3 flex-wrap">
+  <a href="{{ url_for('hives_list') }}" class="btn btn-sm btn-outline">
+    ← Retour aux ruches
+  </a>
+</div>
+
+{# ---------------------------------------------------------
+   1) CAPSULE PRINCIPALE : identité de la ruche
+---------------------------------------------------------- #}
+
+<div class="card shadow-soft mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap gap-2">
+      <div>
+        <h1 class="h4 mb-1">
+          {{ hive["name"] or ("Ruche " ~ hive["code"]) }}
+        </h1>
+        <p class="mb-1 small text-muted">
+          Type :
+          <strong>{{ hive["hive_type"] or "À préciser" }}</strong>
+          {% if hive["year_installed"] %}
+            · installée en {{ hive["year_installed"] }}
+          {% endif %}
+        </p>
+        {% if hive["location_label"] %}
+          <p class="mb-0 small text-muted">
+            Emplacement : {{ hive["location_label"] }}
+          </p>
+        {% endif %}
+      </div>
+
+      <div class="text-end">
+        <span class="badge bg-outline fs-6 d-block">
+          {{ hive["code"] }}
+        </span>
+        {% if hive["status"] %}
+          <span class="badge bg-tag mt-2">
+            {{ hive["status"] }}
+          </span>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if hive["notes"] %}
+      <p class="small text-muted mb-0 mt-2">
+        {{ hive["notes"] }}
+      </p>
+    {% endif %}
+  </div>
+</div>
+
+{# ---------------------------------------------------------
+   2) COLONIE ACTUELLE
+---------------------------------------------------------- #}
+
+<div class="card shadow-soft mb-4">
+  <div class="card-body small">
+    <h2 class="h5 mb-2">Colonie actuelle</h2>
+
+    {% if current_colony %}
+      <div class="row">
+        <div class="col-md-6">
+          <dl class="row mb-0">
+            <dt class="col-4">Race</dt>
+            <dd class="col-8">
+              {{ current_colony["bee_race"] or "À préciser" }}
+            </dd>
+
+            <dt class="col-4">Origine</dt>
+            <dd class="col-8">
+              {% if current_colony["origin_type"] %}
+                {{ current_colony["origin_type"] }}
+                {% if current_colony["queen_origin"] %}
+                  – {{ current_colony["queen_origin"] }}
+                {% endif %}
+              {% else %}
+                {{ current_colony["queen_origin"] or "À préciser" }}
+              {% endif %}
+            </dd>
+
+            <dt class="col-4">Reine</dt>
+            <dd class="col-8">
+              {% if current_colony["queen_year"] %}
+                Reine {{ current_colony["queen_year"] }}
+              {% else %}
+                Année de reine à préciser
+              {% endif %}
+            </dd>
+
+            <dt class="col-4">Période</dt>
+            <dd class="col-8">
+              {% if current_colony["start_year"] %}
+                {{ current_colony["start_year"] }}
+              {% else %}
+                ?
+              {% endif %}
+              –
+              {% if current_colony["end_year"] %}
+                {{ current_colony["end_year"] }}
+              {% else %}
+                en cours
+              {% endif %}
+            </dd>
+          </dl>
+        </div>
+
+        <div class="col-md-6">
+          <dl class="row mb-0">
+            <dt class="col-4">Couvain</dt>
+            <dd class="col-8">
+              {{ current_colony["brood_strength"] or "À préciser" }}
+            </dd>
+
+            <dt class="col-4">Tempérament</dt>
+            <dd class="col-8">
+              {{ current_colony["temperament"] or "À préciser" }}
+            </dd>
+
+            <dt class="col-4">Essaimage</dt>
+            <dd class="col-8">
+              {{ current_colony["swarm_tendency"] or "À préciser" }}
+            </dd>
+          </dl>
+        </div>
+      </div>
+
+      {% if current_colony["notes"] %}
+        <p class="mt-2 mb-0 text-muted">
+          {{ current_colony["notes"] }}
+        </p>
+      {% endif %}
+    {% else %}
+      <p class="text-muted fst-italic mb-0">
+        Aucune colonie actuelle renseignée pour cette ruche.
+      </p>
+    {% endif %}
+  </div>
+</div>
+
+{# ---------------------------------------------------------
+   3) RÉCOLTES DE MIEL
+---------------------------------------------------------- #}
+
+<div class="card shadow-soft mb-4">
+  <div class="card-body small">
+    <h2 class="h5 mb-2">Récoltes</h2>
+
+    {% if harvests %}
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-2">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Saison</th>
+              <th>Type de miel</th>
+              <th class="text-end">Miel (kg)</th>
+              <th class="text-end">Cire (kg)</th>
+              <th class="text-end">Humidité (%)</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ha in harvests %}
+              <tr>
+                <td>{{ ha["harvest_date"] }}</td>
+                <td>{{ ha["season"] or "—" }}</td>
+                <td>{{ ha["honey_type"] or "—" }}</td>
+                <td class="text-end">
+                  {% if ha["weight_kg"] is not none %}
+                    {{ "%.1f"|format(ha["weight_kg"]) }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  {% if ha["wax_kg"] is not none %}
+                    {{ "%.2f"|format(ha["wax_kg"]) }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  {% if ha["moisture_percent"] is not none %}
+                    {{ "%.1f"|format(ha["moisture_percent"]) }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                <td>
+                  {% if ha["notes"] %}
+                    {{ ha["notes"] }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-muted fst-italic mb-0">
+        Aucune récolte enregistrée pour cette ruche.
+      </p>
+    {% endif %}
+  </div>
+</div>
+
+{# ---------------------------------------------------------
+   4) SYNTHÈSE ANNUELLE
+---------------------------------------------------------- #}
+
+<div class="card shadow-soft mb-4">
+  <div class="card-body small">
+    <h2 class="h5 mb-2">Synthèse annuelle</h2>
+
+    {% if yearly_stats %}
+      <div class="table-responsive">
+        <table class="table table-sm mb-0 align-middle">
+          <thead>
+            <tr>
+              <th>Année</th>
+              <th class="text-end">Miel total (kg)</th>
+              <th class="text-end">Cire totale (kg)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for y in yearly_stats %}
+              <tr>
+                <td>{{ y["year"] }}</td>
+                <td class="text-end">
+                  {% if y["total_honey_kg"] is not none %}
+                    {{ "%.1f"|format(y["total_honey_kg"]) }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  {% if y["total_wax_kg"] is not none %}
+                    {{ "%.2f"|format(y["total_wax_kg"]) }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-muted fst-italic mb-0">
+        Pas encore de données de production pour cette ruche.
+      </p>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

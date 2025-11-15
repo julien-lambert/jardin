@@ -83,6 +83,12 @@
             Taxonomie
           </a>
         </li>
+                <li class="nav-item">
+          <a class="nav-link {% if request.path.startswith('/species') %}active{% endif %}"
+             href="{{ url_for('hives_list') }}">
+            Ruche
+          </a>
+        </li>
         <li class="nav-item">
           <a class="nav-link {% if request.path.startswith('/map') %}active{% endif %}"
              href="{{ url_for('garden_map') }}">
