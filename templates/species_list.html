@@ -23,75 +23,120 @@
   </div>
 </div>
 
-{% for fam in families %}
-  {# Titre de famille #}
-  <div class="mt-3 mb-1">
-    <div class="strata-title">
-      {{ fam.family }}
+{% if families %}
+  {% for fam in families %}
+    {# --- Titre de famille --- #}
+    <div class="mt-3 mb-1">
+      <div class="strata-title">
+        {{ fam.family }}
+      </div>
     </div>
-  </div>
 
-  {% for gen in fam.genera %}
-    {# Sous-titre de genre #}
-    <h2 class="h6 text-muted mt-2 mb-1">
-      {{ gen.genus }}
-    </h2>
+    {% for gen in fam.genera %}
+      {# --- Sous-titre de genre --- #}
+      <h2 class="h6 text-muted mt-2 mb-1">
+        {{ gen.genus }}
+      </h2>
 
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3 mb-2">
-      {% for s in gen["items"] %}
-        <div class="col">
-          {% if s["latin_name"] %}
-            <a href="{{ url_for('species_detail', latin_name=s['latin_name']) }}"
-               class="text-decoration-none text-reset">
-              <div class="card shadow-soft h-100">
-                <div class="card-body d-flex flex-column">
-                  <h3 class="h6 mb-1">
-                    {{ s["common_name"] or "Nom commun à préciser" }}
-                  </h3>
-                  <p class="latin small mb-1">
-                    <em>{{ s["latin_name"] }}</em>
-                  </p>
+      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3 mb-2">
+        {% for s in gen["items"] %}
+          <div class="col">
+{% if s["latin_name"] %}
+  <a href="{{ url_for('species_detail', latin_name=s['latin_name']) }}"
+     class="text-decoration-none text-reset">
+    <div class="card shadow-soft h-100">
+      <div class="card-body d-flex">
 
-                  <p class="small text-muted mb-2">
-                    {% if s["genus"] %}
-                      Genre : <strong>{{ s["genus"] }}</strong>
-                    {% endif %}
-                  </p>
-                  <p class="small mb-0 text-muted mt-auto">
-                    {{ s["variety_count"] }} cultivar(s),
-                    {{ s["plant_count"] }} individu(s) planté(s)
-                  </p>
-                </div>
-              </div>
-            </a>
+        {# --- TEXTE À GAUCHE --- #}
+        <div class="flex-grow-1 d-flex flex-column me-2">
+          <h3 class="h6 mb-1">
+            {{ s["common_name"] or "Nom commun à préciser" }}
+          </h3>
+          <p class="latin small mb-1">
+            <em>{{ s["latin_name"] }}</em>
+          </p>
+
+          <p class="small text-muted mb-2">
+            {% if s["genus"] %}
+              Genre : <strong>{{ s["genus"] }}</strong>
+            {% endif %}
+          </p>
+
+          <p class="small text-muted mt-auto mb-0">
+            {{ s["variety_count"] }} cultivar(s),
+            {{ s["plant_count"] }} individu(s) planté(s)
+          </p>
+        </div>
+
+        {# --- VIGNETTE CARRÉE À DROITE --- #}
+        <div class="d-none d-sm-flex align-items-stretch" style="flex: 0 0 auto;">
+          {% if s["image_url"] %}
+            <div class="rounded-3 overflow-hidden"
+                 style="width: 80px; aspect-ratio: 1 / 1;">
+              <img src="{{ s['image_url'] }}"
+                   alt="Illustration de {{ s['latin_name'] }}"
+                   style="width: 100%; height: 100%; object-fit: cover; object-position: center;">
+            </div>
           {% else %}
-            <div class="card shadow-soft h-100">
-              <div class="card-body d-flex flex-column">
-                <h3 class="h6 mb-1">
-                  {{ s["common_name"] or "Nom commun à préciser" }}
-                </h3>
-                <p class="latin small mb-1 text-muted fst-italic">
-                  Nom latin non renseigné
-                </p>
-                <p class="small text-muted mb-2">
-                  {% if s["genus"] %}
-                    Genre : <strong>{{ s["genus"] }}</strong>
-                  {% endif %}
-                </p>
-                <p class="small mb-0 text-muted mt-auto">
-                  {{ s["variety_count"] }} cultivar(s),
-                  {{ s["plant_count"] }} individu(s) planté(s)
-                </p>
-              </div>
+            <div class="rounded-3 border d-flex align-items-center justify-content-center text-muted"
+                 style="width: 80px; aspect-ratio: 1 / 1;">
+              <span class="x-small">—</span>
             </div>
           {% endif %}
         </div>
-      {% endfor %}
+      </div>
     </div>
-  {% endfor %}
-{% endfor %}
+  </a>
+{% else %}
+  {# même structure, sans lien et avec texte "latin manquant" #}
+  <div class="card shadow-soft h-100">
+    <div class="card-body d-flex">
 
-{% if not families %}
+      <div class="flex-grow-1 d-flex flex-column me-2">
+        <h3 class="h6 mb-1">
+          {{ s["common_name"] or "Nom commun à préciser" }}
+        </h3>
+        <p class="latin small mb-1 text-muted fst-italic">
+          Nom latin non renseigné
+        </p>
+        <p class="small text-muted mb-2">
+          {% if s["genus"] %}
+            Genre : <strong>{{ s["genus"] }}</strong>
+          {% endif %}
+        </p>
+        <p class="small text-muted mt-auto mb-0">
+          {{ s["variety_count"] }} cultivar(s),
+          {{ s["plant_count"] }} individu(s) planté(s)
+        </p>
+      </div>
+
+      <div class="d-none d-sm-flex align-items-stretch" style="flex: 0 0 auto;">
+        {% if s["image_url"] %}
+          <div class="rounded-3 overflow-hidden"
+               style="width: 80px; aspect-ratio: 1 / 1;">
+            <img src="{{ s['image_url'] }}"
+                 alt="Illustration de {{ s['common_name'] or 'Espèce' }}"
+                 style="width: 100%; height: 100%; object-fit: cover; object-position: center;">
+          </div>
+        {% else %}
+          <div class="rounded-3 border d-flex align-items-center justify-content-center text-muted"
+               style="width: 80px; aspect-ratio: 1 / 1;">
+            <span class="x-small">—</span>
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+
+    {% endfor %}
+  {% endfor %}
+{% else %}
   <p class="text-muted fst-italic mt-3">Aucune espèce trouvée.</p>
 {% endif %}
+
 {% endblock %}

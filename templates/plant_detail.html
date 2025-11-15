@@ -17,7 +17,6 @@
     Modifier cet individu
   </a>
 
-  {# bouton vers la fiche espèce #}
   {% if plant["species_latin_name"] %}
     <a href="{{ url_for('species_detail', latin_name=plant['species_latin_name']) }}"
        class="btn btn-sm btn-outline-secondary ms-auto">
@@ -27,15 +26,15 @@
 </div>
 
 {# ---------------------------------------------------------
-   CAPSULE PRINCIPALE (image + taxonomie, style proche species_detail)
+   CAPSULE PRINCIPALE (image + taxonomie, alignée comme species_detail)
 ---------------------------------------------------------- #}
 
 <div class="card shadow-soft mb-4">
   <div class="card-body">
-    <div class="row g-3 align-items-start">
+    <div class="row g-3 align-items-stretch">
 
-      {# --- Colonne image --- #}
-      <div class="col-12 col-md-4">
+      {# --- IMAGE À GAUCHE, MÊME COMPORTEMENT QUE species_detail --- #}
+      <div class="col-12 col-md-4 d-flex">
         {% set img_src = None %}
         {% if plant["image_local"] %}
           {% set img_src = url_for('static', filename=plant["image_local"]) %}
@@ -44,21 +43,22 @@
         {% endif %}
 
         {% if img_src %}
-          <div class="ratio ratio-4x3 mb-2">
+          <div class="w-100 rounded-3 overflow-hidden"
+               style="aspect-ratio: 4 / 3; height: 100%;">
             <img src="{{ img_src }}"
                  alt="Illustration de {{ plant['common_name'] }}"
-                 class="img-fluid rounded-3"
-                 style="object-fit: cover;">
+                 style="width: 100%; height: 100%; object-fit: cover; object-position: center;">
           </div>
         {% else %}
-          <div class="ratio ratio-4x3 mb-2 bg-light rounded-3 d-flex align-items-center justify-content-center text-muted">
+          <div class="w-100 rounded-3 border d-flex align-items-center justify-content-center text-muted"
+               style="aspect-ratio: 4 / 3; height: 100%;">
             <span class="small">Aucune image</span>
           </div>
         {% endif %}
       </div>
 
-      {# --- Colonne texte : noms, taxonomie, tags espèce/cultivar --- #}
-      <div class="col-12 col-md-8">
+      {# --- TEXTE À DROITE (inchangé, juste la classe d-flex pour étirer) --- #}
+      <div class="col-12 col-md-8 d-flex flex-column">
         <div class="d-flex justify-content-between align-items-start mb-2">
           <div>
             <h1 class="h4 mb-1">
@@ -164,7 +164,6 @@
     </div>
   </div>
 </div>
-
 {# ---------------------------------------------------------
    BLOC "Données de l’individu"
 ---------------------------------------------------------- #}
@@ -251,6 +250,13 @@
                 <br>Source : {{ plant["acquisition_source"] }}
               {% endif %}
             </div>
+          </div>
+        {% endif %}
+
+        {% if plant["rootstock"] %}
+          <div class="mb-2">
+            <div class="fw-semibold mb-1">Porte-greffe</div>
+            <div>{{ plant["rootstock"] }}</div>
           </div>
         {% endif %}
 

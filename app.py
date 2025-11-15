@@ -112,67 +112,72 @@ def home():
 
 @app.route("/plants")
 def plants():
-    """Liste des plants sous forme de cartes, avec filtres."""
     db = get_db()
-    q = request.args.get("q", "").strip()
+
+    search = request.args.get("q", "").strip()
     zone_filter = request.args.get("zone", "").strip()
 
+    where = []
     params = []
-    where_clauses = []
 
-    if q:
-        where_clauses.append(
-            """(
-              species.common_name LIKE ?
-              OR species.variety_name LIKE ?
-              OR species.latin_name LIKE ?
-              OR plants.label LIKE ?
-              OR plants.notes LIKE ?
-            )"""
-        )
-        like = f"%{q}%"
-        params += [like, like, like, like, like]
+    if search:
+        where.append("""
+            (plants.label LIKE ?
+             OR species.common_name LIKE ?
+             OR species.variety_name LIKE ?
+             OR species.latin_name LIKE ?)
+        """)
+        like = f"%{search}%"
+        params.extend([like, like, like, like])
 
     if zone_filter:
-        where_clauses.append("plants.zone = ?")
+        where.append("plants.zone = ?")
         params.append(zone_filter)
 
-    where_sql = ""
-    if where_clauses:
-        where_sql = "WHERE " + " AND ".join(where_clauses)
+    where_sql = "WHERE " + " AND ".join(where) if where else ""
 
-    sql = f"""
+    plants = db.execute(f"""
         SELECT
-            plants.id,
-            plants.label,
-            plants.zone,
-            plants.planted_at,
-            plants.lat,
-            plants.lon,
-            plants.notes,
-            species.common_name,
-            species.variety_name,
-            species.latin_name
+          plants.*,
+          species.common_name,
+          species.variety_name,
+          species.latin_name,
+          species.family        AS species_family,
+          species.genus         AS species_genus,
+          species.strata        AS species_strata,
+          species.image_url     AS species_image_url
         FROM plants
         JOIN species ON plants.species_id = species.id
         {where_sql}
-        ORDER BY species.common_name, species.variety_name, plants.label
-    """
-    rows = db.execute(sql, params).fetchall()
+        ORDER BY
+          CASE species.strata
+            WHEN 'canopée'     THEN 1
+            WHEN 'sous-étage'  THEN 2
+            WHEN 'arbuste'     THEN 3
+            WHEN 'liane'       THEN 4
+            WHEN 'couvre-sol'  THEN 5
+            WHEN 'autre'       THEN 6
+            ELSE 7
+          END,
+          species.family,
+          species.genus,
+          species.latin_name,
+          plants.label
+    """, params).fetchall()
 
-    # zones disponibles pour le filtre
-    zones = [
-        r[0]
-        for r in db.execute(
-            "SELECT DISTINCT zone FROM plants WHERE zone IS NOT NULL ORDER BY zone"
-        )
-    ]
+    zones_rows = db.execute("""
+        SELECT DISTINCT zone
+        FROM plants
+        WHERE zone IS NOT NULL AND zone <> ''
+        ORDER BY zone
+    """).fetchall()
+    zones = [r["zone"] for r in zones_rows]
 
     return render_template(
         "plants.html",
-        plants=rows,
+        plants=plants,
         zones=zones,
-        search=q,
+        search=search,
         zone_filter=zone_filter,
     )
 
@@ -205,6 +210,7 @@ def plant_detail(plant_id):
             plants.plantnet_obs_id,
             plants.status,
             plants.care_notes,
+            plants.rootstock,          -- <<< AJOUT ESSENTIEL !!!
 
             -- champs espèce (base taxonomique)
             species.common_name,
@@ -357,6 +363,7 @@ def species_list():
             s.genus,
             s.latin_name,
             s.common_name,
+            s.image_url,
             COUNT(DISTINCT s.variety_name) AS variety_count,
             COUNT(DISTINCT p.id)          AS plant_count
         FROM species AS s
@@ -379,8 +386,16 @@ def species_list():
         params = [term] * 5
 
     group_order = """
-        GROUP BY s.family, s.genus, s.latin_name, s.common_name
-        ORDER BY s.family, s.genus, s.latin_name
+        GROUP BY
+            s.family,
+            s.genus,
+            s.latin_name,
+            s.common_name,
+            s.image_url
+        ORDER BY
+            s.family,
+            s.genus,
+            s.latin_name
     """
 
     rows = db.execute(base_sql + where + group_order, params).fetchall()
@@ -414,7 +429,7 @@ def species_list():
             family_block["genera"].append(genus_block)
             current_genus = gen_name
 
-        # On pousse la ligne telle quelle dans items
+        # On pousse la ligne telle quelle dans items (image_url incluse)
         genus_block["items"].append(dict(r))
 
     return render_template("species_list.html", families=families, search=q)
@@ -823,6 +838,12 @@ def garden_map():
     return render_template("map.html", plants=plants)
 
 
+import os
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+# <<<<<<< HEAD
+#     port = int(os.environ.get("PORT", 5000))
+#     app.run(host="0.0.0.0", port=port)
+# =======
+    port = int(os.environ.get("PORT", 5001))  # 5001 en local, PORT imposé sur Render
+    app.run(host="0.0.0.0", port=port, debug=True)

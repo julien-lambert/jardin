@@ -37,24 +37,26 @@
           <input type="text" class="form-control" value="{{ base['latin_name'] }}" disabled>
         </div>
 
-        <div class="col-md-4">
-          <label class="form-label">Strate</label>
-          <select class="form-select" name="strata">
-            <option value=""></option>
-            {% set strat = base['strata'] or '' %}
-            {% for val, label in [
-              ('canopée','Canopée'),
-              ('sous-étage','Sous-étage'),
-              ('arbuste','Arbuste'),
-              ('couvre-sol','Couvre-sol'),
-              ('liane','Liane'),
-              ('racine','Racine / tubercule'),
-              ('autre','Autre')
-            ] %}
-              <option value="{{ val }}" {% if strat == val %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
+       <div class="col-md-4">
+  <label class="form-label">Strate</label>
+  <select class="form-select" name="strata">
+    <option value=""></option>
+    {% set strat = base['strata'] or '' %}
+    {% for val, label in [
+      ('canopée','Canopée'),
+      ('sous-étage','Sous-étage'),
+      ('arbuste','Arbuste'),
+      ('herbacée','Herbacée'),
+      ('couvre-sol','Couvre-sol'),
+      ('liane','Liane'),
+      ('racine','Racine')
+    ] %}
+      <option value="{{ val }}" {% if strat == val %}selected{% endif %}>
+        {{ label }}
+      </option>
+    {% endfor %}
+  </select>
+</div>
 
         <div class="col-md-4">
           <label class="form-label">Famille</label>

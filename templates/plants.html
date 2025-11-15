@@ -5,12 +5,15 @@
 {% block content %}
 <h1 class="h3 mb-3">Plants du jardin</h1>
 
-{# --- RECHERCHE / FILTRES EXISTANTS (inchangé) --- #}
+{# --- RECHERCHE / FILTRES --- #}
 <form class="row g-2 align-items-end mb-3" method="get">
   <div class="col-md-6">
     <label class="form-label small mb-1">Recherche</label>
-    <input type="text" class="form-control" name="q"
-           value="{{ search }}" placeholder="Nom, variété, code…">
+    <input type="text"
+           class="form-control"
+           name="q"
+           value="{{ search }}"
+           placeholder="Nom, variété, code…">
   </div>
 
   <div class="col-md-3">
@@ -31,71 +34,135 @@
   </div>
 </form>
 
-{# --- LISTE DES PLANTS --- #}
-{% if plants %}
-<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
-  {% for p in plants %}
-  <div class="col">
-    <a href="{{ url_for('plant_detail', plant_id=p['id']) }}"
-       class="text-decoration-none text-reset">
-      <div class="card shadow-soft h-100">
-        <div class="card-body small d-flex flex-column">
+{% if not plants %}
+  <p class="text-muted fst-italic">Aucun plant enregistré.</p>
+{% else %}
 
-          {# -------- EN-TÊTE -------- #}
-          <div class="d-flex justify-content-between align-items-start mb-1">
-            <div>
-              <div class="fw-semibold">
-                {{ p["common_name"] }}
-                {% if p["variety_name"] %}
-                  – {{ p["variety_name"] }}
+  {# on itère sur les plants déjà triés par strate côté SQL #}
+  {% set ns = namespace(current_strata = None, first = True) %}
+
+  {% for p in plants %}
+
+    {# CHANGEMENT DE STRATE → nouveau bloc #}
+    {% if p["species_strata"] != ns.current_strata %}
+      {# fermer la rangée précédente si ce n’est pas le tout premier bloc #}
+      {% if not ns.first %}
+        </div>
+      {% endif %}
+
+      {% set ns.first = False %}
+      {% set ns.current_strata = p["species_strata"] %}
+
+      <div class="mt-3 mb-1">
+        <div class="strata-title">
+          {% if ns.current_strata == 'canopée' %}
+            Canopée – grands arbres
+          {% elif ns.current_strata == 'sous-étage' %}
+            Sous-étage – arbres de verger
+          {% elif ns.current_strata == 'arbuste' %}
+            Arbustes
+          {% elif ns.current_strata == 'liane' %}
+            Lianes
+          {% elif ns.current_strata == 'couvre-sol' %}
+            Couvre-sol et aromatiques
+          {% elif ns.current_strata == 'autre' %}
+            Autre strate / à classer
+          {% else %}
+            Strate non renseignée
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3 mb-2">
+    {% endif %}
+
+    {# --- CARTE INDIVIDUELLE --- #}
+    <div class="col">
+      <a href="{{ url_for('plant_detail', plant_id=p['id']) }}"
+         class="text-decoration-none text-reset">
+        <div class="card shadow-soft h-100">
+          <div class="card-body small d-flex flex-column">
+
+            {# EN-TÊTE : nom + code + vignette #}
+            <div class="d-flex align-items-start mb-2">
+              <div class="flex-grow-1 me-2">
+                <div class="fw-semibold">
+                  {{ p["common_name"] }}
+                  {% if p["variety_name"] %}
+                    – {{ p["variety_name"] }}
+                  {% endif %}
+                </div>
+                {% if p["latin_name"] %}
+                  <div class="latin text-muted">
+                    <em>{{ p["latin_name"] }}</em>
+                  </div>
+                {% endif %}
+                <span class="badge bg-outline mt-1">
+                  {{ p["label"] or ("#" ~ p["id"]) }}
+                </span>
+              </div>
+
+              {# vignette carrée à droite #}
+              <div class="ms-auto">
+                {% set thumb_src = None %}
+                {% if p["image_local"] %}
+                  {% set thumb_src = url_for('static', filename=p["image_local"]) %}
+                {% elif p["species_image_url"] %}
+                  {% set thumb_src = p["species_image_url"] %}
+                {% endif %}
+
+                {% if thumb_src %}
+                  <div class="rounded-3 overflow-hidden"
+                       style="width: 72px; aspect-ratio: 1 / 1;">
+                    <img src="{{ thumb_src }}"
+                         alt="Illustration de {{ p['common_name'] }}"
+                         style="width: 100%; height: 100%; object-fit: cover; object-position: center;">
+                  </div>
+                {% else %}
+                  <div class="rounded-3 border d-flex align-items-center justify-content-center text-muted"
+                       style="width: 72px; aspect-ratio: 1 / 1;">
+                    <span class="x-small">—</span>
+                  </div>
                 {% endif %}
               </div>
-              {% if p["latin_name"] %}
-                <div class="latin text-muted">
-                  <em>{{ p["latin_name"] }}</em>
-                </div>
+            </div>
+
+            {# LIGNE D’INFOS SYNTHÉTIQUES (zone / statut / date) #}
+            <div class="mt-auto">
+              {% if p["zone"] %}
+                <span class="badge bg-tag me-1 mb-1">
+                  {{ p["zone"] }}
+                </span>
+              {% else %}
+                <span class="badge bg-tag me-1 mb-1">
+                  À placer
+                </span>
+              {% endif %}
+
+              {% if p["status"] %}
+                <span class="badge bg-tag me-1 mb-1">
+                  {{ p["status"] }}
+                </span>
+              {% endif %}
+
+              {% if p["planted_at"] %}
+                <span class="badge bg-tag me-1 mb-1">
+                  Planté le {{ p["planted_at"] }}
+                </span>
               {% endif %}
             </div>
 
-            <span class="badge bg-outline">{{ p["label"] or ("#" ~ p["id"]) }}</span>
           </div>
-
-          {# -------- CAPSULES -------- #}
-          <div class="mb-2">
-
-            {# Zone #}
-            {% if p["zone"] %}
-              <span class="badge bg-tag me-1 mb-1">
-                Zone&nbsp;{{ p["zone"] }}
-              </span>
-            {% else %}
-              <span class="badge bg-tag me-1 mb-1">À placer</span>
-            {% endif %}
-
-            {# Strate (vient de species) #}
-            {% if p["species_strata"] %}
-              <span class="badge bg-tag me-1 mb-1">
-                {{ p["species_strata"] }}
-              </span>
-            {% endif %}
-          </div>
-
-          {# -------- NOTES -------- #}
-          {% if p["notes"] %}
-            <p class="text-muted mb-0 text-clamp-2">
-              {{ p["notes"] }}
-            </p>
-          {% else %}
-            <p class="text-muted mb-0 fst-italic">—</p>
-          {% endif %}
-
         </div>
+      </a>
+    </div>
+
+    {# fermeture du dernier bloc de rangée #}
+    {% if loop.last %}
       </div>
-    </a>
-  </div>
+    {% endif %}
+
   {% endfor %}
-</div>
-{% else %}
-<p class="text-muted fst-italic">Aucun plant enregistré.</p>
+
 {% endif %}
 {% endblock %}

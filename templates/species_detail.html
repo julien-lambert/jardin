@@ -13,27 +13,29 @@
   </a>
 </div>
 
+{# --- FICHE ESPÈCE --- #}
 <div class="card shadow-soft mb-4">
   <div class="card-body">
-    <div class="row g-3 align-items-start">
-      {# Colonne image #}
-      <div class="col-12 col-md-4">
-        {% if base["image_url"] %}
-          <div class="ratio ratio-4x3 mb-2">
-            <img src="{{ base['image_url'] }}"
-                 alt="Photo de {{ base['latin_name'] or base['common_name'] }}"
-                 class="img-fluid rounded-3"
-                 style="object-fit: cover;">
-          </div>
-        {% else %}
-          <div class="ratio ratio-4x3 mb-2 bg-light rounded-3 d-flex align-items-center justify-content-center text-muted">
-            <span class="small">Aucune image</span>
-          </div>
-        {% endif %}
-      </div>
+<div class="row g-3 align-items-stretch">
+         {# --- IMAGE À GAUCHE --- #}
+<div class="col-12 col-md-4 d-flex">
+  {% if base["image_url"] %}
+    <div class="w-100 rounded-3 overflow-hidden"
+         style="aspect-ratio: 4 / 3; height: 100%;">
+      <img src="{{ base['image_url'] }}"
+           alt="Photo de {{ base['latin_name'] or base['common_name'] }}"
+           style="width: 100%; height: 100%; object-fit: cover; object-position: center;">
+    </div>
+  {% else %}
+    <div class="w-100 rounded-3 border d-flex align-items-center justify-content-center text-muted"
+         style="aspect-ratio: 4 / 3; height: 100%;">
+      <span class="small">Aucune image</span>
+    </div>
+  {% endif %}
+</div>
 
-      {# Colonne texte #}
-      <div class="col-12 col-md-8">
+      {# --- TEXTE À DROITE --- #}
+      <div class="col-12 col-md-8 d-flex flex-column">
         <h1 class="h4 mb-1">
           {{ base["common_name"] or base["latin_name"] }}
         </h1>
@@ -52,16 +54,53 @@
 
               <dt class="col-4">Strate</dt>
               <dd class="col-8">{{ base["strata"] or "—" }}</dd>
+
+              <dt class="col-4">Origine</dt>
+              <dd class="col-8">{{ base["origin"] or "—" }}</dd>
+
+              <dt class="col-4">Type</dt>
+              <dd class="col-8">{{ base["plant_type"] or "—" }}</dd>
+
+              <dt class="col-4">Hauteur</dt>
+              <dd class="col-8">
+                {% if base["height_min"] and base["height_max"] %}
+                  {{ base["height_min"] }} – {{ base["height_max"] }} m
+                {% else %}
+                  —
+                {% endif %}
+              </dd>
+
+              <dt class="col-4">Longévité</dt>
+              <dd class="col-8">
+                {% if base["lifespan_min"] and base["lifespan_max"] %}
+                  {{ base["lifespan_min"] }} – {{ base["lifespan_max"] }} ans
+                {% else %}
+                  —
+                {% endif %}
+              </dd>
             </dl>
           </div>
+
           <div class="col-sm-6">
             {% if base["tags"] %}
               <div class="mb-1 fw-semibold">Tags</div>
               <p class="mb-2">
-                {% for t in base["tags"].split(",") %}
+                {% for t in base["tags"].split(",") if t.strip() %}
                   <span class="badge bg-tag me-1 mb-1">{{ t.strip() }}</span>
                 {% endfor %}
               </p>
+            {% endif %}
+
+            {% if base["melliferous_level"] or base["ornamental_interest"] %}
+              <div class="text-muted small">
+                {% if base["melliferous_level"] %}
+                  Mellifère : {{ base["melliferous_level"] }}
+                  {% if base["ornamental_interest"] %} · {% endif %}
+                {% endif %}
+                {% if base["ornamental_interest"] %}
+                  Intérêt ornemental : {{ base["ornamental_interest"] }}
+                {% endif %}
+              </div>
             {% endif %}
           </div>
         </div>
@@ -75,6 +114,46 @@
     </div>
   </div>
 </div>
+
+{# --- Morphologie / Culture / Usages en trois capsules responsives --- #}
+{% if base["morphology"] or base["culture"] or base["uses"] %}
+  <div class="row g-3 mb-4 small">
+
+    {% if base["morphology"] %}
+      <div class="col-12 col-md-4">
+        <div class="card shadow-soft h-100">
+          <div class="card-body">
+            <h2 class="h6 fw-semibold mb-2">Morphologie</h2>
+            <p class="mb-0 text-muted">{{ base["morphology"] }}</p>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    {% if base["culture"] %}
+      <div class="col-12 col-md-4">
+        <div class="card shadow-soft h-100">
+          <div class="card-body">
+            <h2 class="h6 fw-semibold mb-2">Culture</h2>
+            <p class="mb-0 text-muted">{{ base["culture"] }}</p>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    {% if base["uses"] %}
+      <div class="col-12 col-md-4">
+        <div class="card shadow-soft h-100">
+          <div class="card-body">
+            <h2 class="h6 fw-semibold mb-2">Usages</h2>
+            <p class="mb-0 text-muted">{{ base["uses"] }}</p>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+  </div>
+{% endif %}
 
 {# --- Cultivars / Variétés --- #}
 <h2 class="h5 mb-2">Cultivars / Variétés</h2>
