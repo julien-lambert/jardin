@@ -101,6 +101,9 @@ def home():
     """Page d’accueil avec quelques stats."""
     db = get_db()
     stats = {
+    # nouvelles stats
+        "hive_count": db.execute("SELECT COUNT(*) FROM hives").fetchone()[0],
+        "colony_count": db.execute("SELECT COUNT(*) FROM hive_colonies").fetchone()[0],
         "species_count": db.execute("SELECT COUNT(*) FROM species").fetchone()[0],
         "plant_count": db.execute("SELECT COUNT(*) FROM plants").fetchone()[0],
         "zone_count": db.execute(

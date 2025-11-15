@@ -8,28 +8,23 @@
 
   <!-- Bloc "hero" -->
   <div class="col-12 col-lg-7">
-    <h1 class="display-6 mb-2">Jardin-forêt de la Ferme des Étoiles</h1>
+    <h1 class="display-6 mb-2">Le Jardin-Forêt de la Ferme des Étoiles</h1>
     <p class="lead fs-5 mb-2">
-      Atlas vivant du terrain de <strong>Devey</strong>, à Saint-Hilaire-Cusson-la-Valmitte :
-      arbres, arbustes, haies et plantes mellifères du jardin-forêt.
+      Atlas vivant du jardin-forêt de Julien <strong>Julien Lambert</strong> au <strong>Devey</strong>, :
+      arbres, arbustes, plantes mellifères et ruches du terrain.
     </p>
 
     <p class="mb-2">
-      Le projet est porté par <strong>Julien Lambert</strong>. Chaque fiche correspond
-      à un individu réel du jardin-forêt, ancré dans le relief, le sol et la canopée du lieu.
+      Chaque fiche témoigne d’un être végétal du Devey, inscrit dans la terre, sculpté par le vent et la lumière.
     </p>
 
     <p class="mb-3">
-      Sur le terrain, certaines plantes portent une <strong>puce NFC</strong> : en approchant
-      le téléphone de l’étiquette, la fiche de l’individu s’ouvre directement sur ce site.
+      Chaque étiquette botanique cache une puce silencieuse : au simple contact du téléphone, la fiche de la plante apparaît, comme si elle murmurait son nom.
     </p>
 
     <div class="d-flex flex-wrap gap-2 mb-3">
       <a href="{{ url_for('plants') }}" class="btn btn-primary">
         Voir les plants
-      </a>
-      <a href="{{ url_for('garden_map') }}" class="btn btn-outline">
-        Carte du terrain
       </a>
       <a href="{{ url_for('species_list') }}" class="btn btn-outline">
         Taxonomie
@@ -37,6 +32,9 @@
       <a href="{{ url_for('hives_list') }}" class="btn btn-outline">
     Ruches & Abeilles
   </a>
+   <a href="{{ url_for('garden_map') }}" class="btn btn-outline">
+        Carte du terrain
+      </a>
     </div>
 
     <p class="small text-muted mb-0">
@@ -45,38 +43,56 @@
     </p>
   </div>
 
-  <!-- Carte de stats -->
-  <div class="col-12 col-lg-5">
-    <div class="shadow-soft p-3 p-md-4 h-100">
-      <h2 class="h6 mb-3 text-uppercase" style="letter-spacing:0.12em;">
-        État du jardin-forêt
-      </h2>
+ <!-- Carte de stats -->
+<div class="col-12 col-lg-5">
+  <div class="shadow-soft p-3 p-md-4 h-100">
+    <h2 class="h6 mb-3 text-uppercase" style="letter-spacing:0.12em;">
+      État du jardin-forêt
+    </h2>
 
-      <div class="row text-center mb-3">
-        <div class="col-4 border-end border-light-subtle">
-          <div class="fs-3 fw-semibold">{{ stats["plant_count"] }}</div>
-          <div class="small text-muted">individus</div>
-        </div>
-        <div class="col-4 border-end border-light-subtle">
-          <div class="fs-3 fw-semibold">{{ stats["species_count"] }}</div>
-          <div class="small text-muted">espèces / cultivars</div>
-        </div>
-        <div class="col-4">
-          <div class="fs-3 fw-semibold">{{ stats["zone_count"] }}</div>
-          <div class="small text-muted">zones</div>
-        </div>
+    <div class="row text-center mb-3">
+
+      <div class="col-4 border-end border-light-subtle">
+        <div class="fs-3 fw-semibold">{{ stats["plant_count"] }}</div>
+        <div class="small text-muted">individus</div>
       </div>
 
-      <hr class="my-3">
+      <div class="col-4 border-end border-light-subtle">
+        <div class="fs-3 fw-semibold">{{ stats["species_count"] }}</div>
+        <div class="small text-muted">espèces / variétés</div>
+      </div>
 
-      <p class="small mb-1">
-        Données stockées localement dans <code>jardin.db</code> (SQLite).
-      </p>
-      <p class="small text-muted mb-0">
-        Les coordonnées GPS lient chaque individu à la carte interactive
-        et à la géographie réelle du Devey.
-      </p>
+      <div class="col-4">
+        <div class="fs-3 fw-semibold">{{ stats["zone_count"] }}</div>
+        <div class="small text-muted">zones</div>
+      </div>
+
     </div>
+
+    <!-- Ligne ruches / essaims -->
+    <div class="row text-center mb-3">
+
+      <div class="col-6 border-end border-light-subtle">
+        <div class="fs-3 fw-semibold">{{ stats["hive_count"] }}</div>
+        <div class="small text-muted">ruches</div>
+      </div>
+
+      <div class="col-6">
+        <div class="fs-3 fw-semibold">{{ stats["colony_count"] }}</div>
+        <div class="small text-muted">essaims</div>
+      </div>
+
+    </div>
+
+    <hr class="my-3">
+
+    <p class="small mb-1">
+      Données stockées localement dans <code>jardin.db</code> (SQLite).
+    </p>
+    <p class="small text-muted mb-0">
+      Les coordonnées GPS lient chaque individu à la carte interactive
+      et à la géographie réelle du Devey.
+    </p>
   </div>
 </div>
 
@@ -84,9 +100,9 @@
 <div class="row g-3 mb-4 small">
   <div class="col-12 col-md-4">
     <div class="shadow-soft p-3 h-100">
-      <h3 class="h6 mb-2">Le lieu</h3>
+      <h3 class="h6 mb-2">Le Lieu</h3>
       <p class="mb-0">
-        Terrain agricole au lieu-dit <strong>Le Devey</strong>, en lisière de plateau.
+        Terrain agricole au lieu-dit <strong>Du Devey</strong>, en lisière du plateau du Haut-Forez.
         Mise en place progressive d’un jardin-forêt mêlant fruitiers anciens,
         haies biodiverses et strates mellifères.
       </p>
@@ -95,10 +111,10 @@
 
   <div class="col-12 col-md-4">
     <div class="shadow-soft p-3 h-100">
-      <h3 class="h6 mb-2">Ferme des Étoiles</h3>
+      <h3 class="h6 mb-2">La Ferme des Étoiles</h3>
       <p class="mb-0">
-        Micro-ferme et lieu de médiation : écologie, agroforesterie et astronomie,
-        avec un planétarium comme outil central pour relier ciel et paysage.
+        Lieu de de culture ,d'écologie, agroforesterie et d'astronomie et d'art,
+        avec un planétarium mobil comme outil central pour relier ciel terre et humanité.
       </p>
     </div>
   </div>
@@ -107,7 +123,7 @@
     <div class="shadow-soft p-3 h-100">
       <h3 class="h6 mb-2">Étiquettes NFC</h3>
       <p class="mb-0">
-        Chaque plant reçoit un code (ex. <code>ABR-LUI-001</code>) et, à terme,
+        Chaque plant reçoit un code (ex. <code>ABR-LUI-001</code>) associé à
         une étiquette <strong>NFC</strong>. Le contact du téléphone sur l’étiquette
         ouvre sa fiche complète : taxonomie, emplacement, rôle dans le jardin-forêt.
       </p>
