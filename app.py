@@ -198,7 +198,7 @@ def plant_detail(plant_id):
             plants.lat,
             plants.lon,
             plants.altitude,
-            plants.notes,
+            plants.notes           AS plant_notes,
             plants.image_local,
             plants.tags,
             plants.micro_site,
@@ -210,29 +210,30 @@ def plant_detail(plant_id):
             plants.plantnet_obs_id,
             plants.status,
             plants.care_notes,
-            plants.rootstock,          -- <<< AJOUT ESSENTIEL !!!
+            plants.rootstock,
 
-            -- champs espèce (base taxonomique)
+            -- champs espèce (base taxonomique + cultivar)
             species.common_name,
             species.variety_name,
-            species.latin_name      AS species_latin_name,
-            species.family          AS species_family,
-            species.genus           AS species_genus,
-            species.strata          AS species_strata,
-            species.tags            AS species_tags,
-            species.notes           AS species_notes,
-            species.image_url       AS species_image_url,
-            species.origin          AS species_origin,
-            species.plant_type      AS species_plant_type,
-            species.morphology      AS species_morphology,
-            species.culture         AS species_culture,
-            species.uses            AS species_uses,
-            species.melliferous_level     AS species_melliferous_level,
-            species.ornamental_interest   AS species_ornamental_interest,
-            species.lifespan_min          AS species_lifespan_min,
-            species.lifespan_max          AS species_lifespan_max,
-            species.height_min            AS species_height_min,
-            species.height_max            AS species_height_max
+            species.latin_name          AS species_latin_name,
+            species.family              AS species_family,
+            species.genus               AS species_genus,
+            species.strata              AS species_strata,
+            species.tags                AS species_tags,
+            species.notes               AS species_notes,       -- notes "espèce"
+            species.variety_notes       AS variety_notes,       -- notes "cultivar"
+            species.image_url           AS species_image_url,
+            species.origin              AS species_origin,
+            species.plant_type          AS species_plant_type,
+            species.morphology          AS species_morphology,
+            species.culture             AS species_culture,
+            species.uses                AS species_uses,
+            species.melliferous_level   AS species_melliferous_level,
+            species.ornamental_interest AS species_ornamental_interest,
+            species.lifespan_min        AS species_lifespan_min,
+            species.lifespan_max        AS species_lifespan_max,
+            species.height_min          AS species_height_min,
+            species.height_max          AS species_height_max
         FROM plants
         JOIN species ON plants.species_id = species.id
         WHERE plants.id = ?
@@ -437,30 +438,104 @@ def species_list():
 @app.route("/species/<path:latin_name>")
 def species_detail(latin_name):
     """
-    Détail d'une espèce botanique :
-    - fiche botanique (famille, genre, latin)
-    - liste des cultivars (lignes de species)
-    - liste des individus plantés (lignes de plants)
+    Détail d'une espèce :
+    - fiche botanique de base (notes d'espèce)
+    - liste des cultivars (avec variety_notes propres)
+    - liste des individus plantés
     """
     db = get_db()
 
-    # Toutes les lignes de species correspondant à cette espèce
-    variants = db.execute(
+    # --- 1) FICHE ESPÈCE (ligne "type", sans cultivar si possible) ---
+    base = db.execute(
         """
-        SELECT *
+        SELECT
+            id,
+            common_name,
+            variety_name,
+            latin_name,
+            family,
+            genus,
+            strata,
+            tags,
+            notes,          -- note d'espèce
+            variety_notes,  -- laissé au cas où, mais en principe vide ici
+            image_url,
+            origin,
+            plant_type,
+            morphology,
+            culture,
+            uses,
+            melliferous_level,
+            ornamental_interest,
+            lifespan_min,
+            lifespan_max,
+            height_min,
+            height_max
         FROM species
         WHERE latin_name = ?
+          AND (variety_name IS NULL OR variety_name = '')
+        LIMIT 1
+        """,
+        (latin_name,),
+    ).fetchone()
+
+    # Si tu n'as pas de ligne "sans variété", on prend la première ligne
+    if base is None:
+        base = db.execute(
+            """
+            SELECT
+                id,
+                common_name,
+                variety_name,
+                latin_name,
+                family,
+                genus,
+                strata,
+                tags,
+                notes,
+                variety_notes,
+                image_url,
+                origin,
+                plant_type,
+                morphology,
+                culture,
+                uses,
+                melliferous_level,
+                ornamental_interest,
+                lifespan_min,
+                lifespan_max,
+                height_min,
+                height_max
+            FROM species
+            WHERE latin_name = ?
+            ORDER BY COALESCE(variety_name, '')
+            LIMIT 1
+            """,
+            (latin_name,),
+        ).fetchone()
+
+    if base is None:
+        return "Espèce introuvable", 404
+
+    # --- 2) LISTE DES CULTIVARS / VARIÉTÉS ---
+    variants = db.execute(
+        """
+        SELECT
+            id,
+            common_name,
+            variety_name,
+            tags,
+            variety_notes
+        FROM species
+        WHERE latin_name = ?
+          AND variety_name IS NOT NULL
+          AND variety_name != ''
         ORDER BY variety_name, common_name
         """,
         (latin_name,),
     ).fetchall()
 
-    if not variants:
-        return "Espèce introuvable", 404
-
-    base = variants[0]  # fiche de référence
-
-    # Tous les individus du jardin reliés à cette espèce
+    # --- 3) INDIVIDUS PLANTÉS DANS LE JARDIN ---
     plants = db.execute(
         """
         SELECT

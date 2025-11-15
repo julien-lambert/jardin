@@ -170,9 +170,9 @@
                 {{ v["common_name"] }} (type)
               {% endif %}
             </p>
-            {% if v["notes"] %}
-              <p class="text-muted mb-2">{{ v["notes"] }}</p>
-            {% endif %}
+            {% if v["variety_notes"] %}
+  <p class="text-muted mb-2">{{ v["variety_notes"] }}</p>
+{% endif %}
             {% if v["tags"] %}
               <p class="mb-0">
                 {% for t in v["tags"].split(",") %}

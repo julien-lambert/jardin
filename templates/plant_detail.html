@@ -25,16 +25,13 @@
   {% endif %}
 </div>
 
-{# ---------------------------------------------------------
-   CAPSULE PRINCIPALE (image + taxonomie, alignée comme species_detail)
----------------------------------------------------------- #}
 
 <div class="card shadow-soft mb-4">
   <div class="card-body">
     <div class="row g-3 align-items-stretch">
 
-      {# --- IMAGE À GAUCHE, MÊME COMPORTEMENT QUE species_detail --- #}
-      <div class="col-12 col-md-4 d-flex">
+      {# --- Colonne image --- #}
+      <div class="col-12 col-md-4">
         {% set img_src = None %}
         {% if plant["image_local"] %}
           {% set img_src = url_for('static', filename=plant["image_local"]) %}
@@ -43,21 +40,20 @@
         {% endif %}
 
         {% if img_src %}
-          <div class="w-100 rounded-3 overflow-hidden"
-               style="aspect-ratio: 4 / 3; height: 100%;">
+          <div class="ratio ratio-4x3 mb-2">
             <img src="{{ img_src }}"
                  alt="Illustration de {{ plant['common_name'] }}"
-                 style="width: 100%; height: 100%; object-fit: cover; object-position: center;">
+                 class="img-fluid rounded-3"
+                 style="object-fit: cover; object-position: center;">
           </div>
         {% else %}
-          <div class="w-100 rounded-3 border d-flex align-items-center justify-content-center text-muted"
-               style="aspect-ratio: 4 / 3; height: 100%;">
+          <div class="ratio ratio-4x3 mb-2 border rounded-3 d-flex align-items-center justify-content-center text-muted">
             <span class="small">Aucune image</span>
           </div>
         {% endif %}
       </div>
 
-      {# --- TEXTE À DROITE (inchangé, juste la classe d-flex pour étirer) --- #}
+      {# --- TEXTE À DROITE : noms, taxonomie, hauteur, longévité, tags --- #}
       <div class="col-12 col-md-8 d-flex flex-column">
         <div class="d-flex justify-content-between align-items-start mb-2">
           <div>
@@ -68,17 +64,6 @@
             {% if plant["species_latin_name"] %}
               <p class="latin mb-2">
                 <em>{{ plant["species_latin_name"] }}</em>
-              </p>
-            {% endif %}
-
-            {% if plant["species_plant_type"] or plant["species_origin"] %}
-              <p class="small mb-2 text-muted">
-                {% if plant["species_plant_type"] %}
-                  {{ plant["species_plant_type"] }}
-                {% endif %}
-                {% if plant["species_origin"] %}
-                  · Origine : {{ plant["species_origin"] }}
-                {% endif %}
               </p>
             {% endif %}
           </div>
@@ -99,8 +84,11 @@
               <dt class="col-4">Strate</dt>
               <dd class="col-8">{{ plant["species_strata"] or "—" }}</dd>
 
-              <dt class="col-4">Cultivar</dt>
-              <dd class="col-8">{{ plant["variety_name"] or "—" }}</dd>
+              <dt class="col-4">Origine</dt>
+              <dd class="col-8">{{ plant["species_origin"] or "—" }}</dd>
+
+              <dt class="col-4">Type</dt>
+              <dd class="col-8">{{ plant["species_plant_type"] or "—" }}</dd>
 
               {% if plant["species_height_min"] is not none or plant["species_height_max"] is not none %}
                 <dt class="col-4">H. adulte</dt>
@@ -155,15 +143,33 @@
           </div>
         </div>
 
+        {# --- Notes combinées : espèce + cultivar + individu --- #}
+        {% set chunks = [] %}
+
         {% if plant["species_notes"] %}
-          <p class="small text-muted mb-0">
-            {{ plant["species_notes"] }}
-          </p>
+          {% set _ = chunks.append("Espèce : " ~ plant["species_notes"]) %}
+        {% endif %}
+
+        {% if plant["variety_notes"] %}
+          {% set _ = chunks.append("Cultivar : " ~ plant["variety_notes"]) %}
+        {% endif %}
+
+        {% if plant["plant_notes"] %}
+          {% set _ = chunks.append("Individu : " ~ plant["plant_notes"]) %}
+        {% endif %}
+
+        {% if chunks %}
+          <div class="mt-2 small text-muted">
+            {% for c in chunks %}
+              <p class="mb-1">{{ c }}</p>
+            {% endfor %}
+          </div>
         {% endif %}
       </div>
     </div>
   </div>
 </div>
+
 {# ---------------------------------------------------------
    BLOC "Données de l’individu"
 ---------------------------------------------------------- #}
