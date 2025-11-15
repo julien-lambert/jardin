@@ -247,7 +247,27 @@ def plant_detail(plant_id):
     if plant is None:
         return "Plant introuvable", 404
 
-    return render_template("plant_detail.html", plant=plant)
+     # Individu précédent (ID plus petit)
+    prev_row = db.execute(
+        "SELECT id FROM plants WHERE id < ? ORDER BY id DESC LIMIT 1",
+        (plant_id,),
+    ).fetchone()
+
+    # Individu suivant (ID plus grand)
+    next_row = db.execute(
+        "SELECT id FROM plants WHERE id > ? ORDER BY id ASC LIMIT 1",
+        (plant_id,),
+    ).fetchone()
+
+    prev_id = prev_row["id"] if prev_row else None
+    next_id = next_row["id"] if next_row else None
+
+    return render_template(
+        "plant_detail.html",
+        plant=plant,
+        prev_id=prev_id,
+        next_id=next_id,
+    )
 
 @app.route("/plants/<int:plant_id>/edit", methods=["GET", "POST"])
 def plant_edit(plant_id):

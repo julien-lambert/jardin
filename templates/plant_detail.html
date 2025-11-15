@@ -331,3 +331,55 @@
 {% endif %}
 
 {% endblock %}
+
+{% block scripts_extra %}
+  {{ super() }}
+  <script>
+  (function () {
+    // IDs précédent / suivant injectés par Jinja
+    const prevId = {{ prev_id if prev_id is not none else 'null' }};
+    const nextId = {{ next_id if next_id is not none else 'null' }};
+
+    // S'il n'y a ni avant ni après, on ne fait rien
+    if (prevId === null && nextId === null) {
+      return;
+    }
+
+    let startX = null;
+    let startY = null;
+    const threshold = 60;   // distance minimale en px pour considérer un swipe
+    const restraint = 40;   // tolérance verticale
+
+    document.addEventListener('touchstart', function (e) {
+      if (!e.changedTouches || e.changedTouches.length === 0) return;
+      const t = e.changedTouches[0];
+      startX = t.clientX;
+      startY = t.clientY;
+    }, { passive: true });
+
+    document.addEventListener('touchend', function (e) {
+      if (startX === null || !e.changedTouches || e.changedTouches.length === 0) return;
+
+      const t = e.changedTouches[0];
+      const dx = t.clientX - startX;
+      const dy = t.clientY - startY;
+
+      // Swipe horizontal franc (pas un simple scroll vertical)
+      if (Math.abs(dx) > threshold && Math.abs(dy) < restraint) {
+        // Swipe vers la gauche → individu suivant
+        if (dx < 0 && nextId !== null) {
+          window.location.href = "/plant/" + nextId;
+        }
+        // Swipe vers la droite → individu précédent
+        else if (dx > 0 && prevId !== null) {
+          window.location.href = "/plant/" + prevId;
+        }
+      }
+
+      startX = null;
+      startY = null;
+    }, { passive: true });
+  })();
+  </script>
+{% endblock %}
+
